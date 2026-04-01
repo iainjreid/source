@@ -1,0 +1,19 @@
+<ol>
+{{ range $key, $value := .ChildEntries.DirEntries }}
+  <li>
+    <details>
+      <summary style="top: {{ mul .Depth 2 }}em; z-index: {{ sub 100 .Depth }};" class="bg-[--base00] sticky hover:bg-slate-100 py-1 pl-2">{{ .Name }}</summary>
+      <div class="pt-1 pb-2 pl-3">
+        <div class="border-l">
+          {{ template "partials/tree.tmpl" $value }}
+        </div>
+      </div>
+    </details>
+  </li>
+{{ end }}
+{{ range $key, $value := .ChildEntries.FileEntries }}
+  <li>
+    <a class="hover:bg-slate-100 py-1 pl-2 w-full block grow" href="/{{ .Path }}">{{ .Name }}</a>
+  </li>
+{{ end }}
+</ol>

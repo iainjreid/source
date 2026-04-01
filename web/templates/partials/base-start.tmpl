@@ -1,0 +1,21 @@
+<html class="h-full font-mono antialiased light">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link href="/static/main.css" rel="stylesheet">
+  </head>
+
+  <body>
+    <div class="flex flex-col h-full">
+      <header class="pointer-events-none relative z-50 flex flex-row w-full">
+        <!-- Logo -->
+        <div class="w-16 p-4 border-r">
+          <svg style="fill: var(--base05);" viewBox="-3.2 -3.2 38.40 38.40" version="1.1" xmlns="http://www.w3.org/2000/svg">
+            <path d="M8 24h16v4h-16v-4zM8 4v16h16v-16h-16z"></path>
+          </svg>
+        </div>
+
+        {{ template "partials/nav.tmpl" .Nav }}
+      </header>
+      <div class="flex-auto overflow-y-auto min-h-0">

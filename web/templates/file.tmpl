@@ -1,0 +1,27 @@
+{{ template "partials/base-start.tmpl" . }}
+<div class="h-full border-t grid grid-cols-12">
+  <div class="overflow-y-auto col-span-2">
+    <div class="grid auto-rows-min border-r text-sm">
+      <details class="sticky top-0 border-b" style="z-index: 100;">
+        <summary class="bg-[--base00] pl-2 py-1">Branch</summary>
+        <div class="absolute bg-white">
+          {{ range .Branches }}
+          <a class="hover:bg-slate-100 py-1 pl-2 w-full block grow" href="/blob/{{ .Hash }}">{{ .Name }}</a>
+          {{ end }}
+        </div>
+      </details>
+      <nav>
+        {{ template "partials/tree.tmpl" .TreeEntryMap.Root }}
+      </nav>
+    </div>
+  </div>
+
+  <div class="overflow-y-auto col-span-10">
+    {{ if .Contents }}
+    {{ htmlSafe .Contents }}
+    {{ else }}
+    Select a file
+    {{ end }}
+  </div>
+</div>
+{{ template "partials/base-stop.tmpl" . }}
