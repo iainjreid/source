@@ -1,6 +1,12 @@
 # Source
 
-Source is a horizontally scalable, _serverless_ Git server.
+A horizontally scalable Git server.
+
+## Introduction
+
+This project aims to fully decouple the underlying durable storage behind
+our Git repositories from the Git protocol itself, to reduce both the
+technical and economical costs of horizontally scaling a Git server.
 
 ## Development status
 
@@ -21,6 +27,9 @@ a repository.
 
 * In repository support for patch-by-patch reviews, a highly successful
   approach to peer reviewing changes used often within Git mailing lists.
+
+* Support partial checkouts without requiring changes to how Git stores
+  objects internally.
 
 ## Current limitations
 
