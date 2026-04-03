@@ -11,10 +11,11 @@ technical and economical costs of horizontally scaling a Git server.
 ## Development status
 
 Currently, Source supports all of the required behaviour needed to
-collaborate successfully via Git.
+collaborate successfully via Git. Albeit with a little tinkering to remove
+the testing aides scattered throughout the codebase.
 
-Cloning, pushing, pulling, fetching, are all possible, with no noticeable
-performance bottlenecks.
+Cloning, pushing, pulling, fetching, are all operational with no
+noticeable performance bottlenecks at this stage.
 
 The web interface is limited, but is on par performance-wise with
 Sourcehut, although lacks functionality beyond simply browsing
