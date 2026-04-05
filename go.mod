@@ -9,7 +9,7 @@ require (
 	github.com/gin-contrib/gzip v1.0.1
 	github.com/gin-gonic/gin v1.10.0
 	github.com/iainjreid/go-git/v5 v5.12.0
-	github.com/iainjreid/go-stencil main
+	github.com/iainjreid/stencil v0.0.1
 	github.com/jackc/pgx/v5 v5.7.1
 	golang.org/x/crypto v0.49.0
 	golang.org/x/sync v0.20.0
