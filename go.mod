@@ -5,7 +5,7 @@ go 1.25.0
 require (
 	github.com/alecthomas/chroma/v2 v2.14.0
 	github.com/anmitsu/go-shlex v0.0.0-20200514113438-38f4b401e2be
-	github.com/iainjreid/go-git-sql main
+	github.com/iainjreid/go-git-sql v0.0.1
 	github.com/gin-contrib/gzip v1.0.1
 	github.com/gin-gonic/gin v1.10.0
 	github.com/iainjreid/go-git/v5 v5.12.0
