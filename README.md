@@ -35,7 +35,7 @@ go mod download
 go build -tags "standalone"
 ```
 
-With the project build, and a Postgres instance standing by you should be
+With the project built, and a Postgres instance standing by you should be
 able to start `source` without any further steps other than passing the
 connection URI as a runtime argument.
 
