@@ -9,10 +9,10 @@ import (
 	"net"
 
 	"github.com/anmitsu/go-shlex"
-	"github.com/iainjreid/go-git/v5/plumbing/format/pktline"
-	"github.com/iainjreid/go-git/v5/plumbing/protocol/packp"
-	"github.com/iainjreid/go-git/v5/plumbing/storer"
-	"github.com/iainjreid/go-git/v5/plumbing/transport"
+	"github.com/go-git/go-git/v5/plumbing/format/pktline"
+	"github.com/go-git/go-git/v5/plumbing/protocol/packp"
+	"github.com/go-git/go-git/v5/plumbing/storer"
+	"github.com/go-git/go-git/v5/plumbing/transport"
 	"golang.org/x/crypto/ssh"
 )
 

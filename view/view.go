@@ -1,16 +1,16 @@
 package view
 
 import (
-	"log"
+	"log/slog"
 	"path"
 	"strings"
 
-	"github.com/iainjreid/source/git"
-	"github.com/iainjreid/source/view/nav"
 	"github.com/alecthomas/chroma/v2"
 	"github.com/alecthomas/chroma/v2/formatters/html"
 	"github.com/alecthomas/chroma/v2/lexers"
 	"github.com/alecthomas/chroma/v2/styles"
+	"github.com/iainjreid/source/git"
+	"github.com/iainjreid/source/view/nav"
 )
 
 type View struct {
@@ -76,9 +76,10 @@ func (v *View) LoadBlob(filename string, blame bool) (*View, error) {
 		lexer = lexers.Fallback
 	}
 
-	style := styles.Get("github")
+	stylename := "github"
+	style := styles.Get(stylename)
 	if style == nil {
-		log.Fatalf("no style")
+		slog.Error("invalid style", "name", stylename)
 		style = styles.Fallback
 	}
 
@@ -86,9 +87,6 @@ func (v *View) LoadBlob(filename string, blame bool) (*View, error) {
 		html.WithLineNumbers(true),
 		html.WithClasses(true),
 		html.WithAllClasses(true),
-		html.LineNumbersInTable(true),
-		html.WithLinkableLineNumbers(true, "L"),
-		html.HighlightLines([][2]int{{1, 2}}),
 	)
 
 	var source string
@@ -119,8 +117,6 @@ func (v *View) LoadBlob(filename string, blame bool) (*View, error) {
 	v.FileName = filename
 	v.File = file
 	v.Contents = lineBuilder.String()
-
-	log.Println(v.Contents)
 
 	return v, nil
 }

@@ -3,16 +3,16 @@ package web
 import (
 	"fmt"
 	"html/template"
-	"log"
+	"log/slog"
 	"net/http"
 	"path"
 	"time"
 
+	"github.com/gin-contrib/gzip"
+	"github.com/gin-gonic/gin"
+	"github.com/go-git/go-git/v5/storage"
 	"github.com/iainjreid/source/git"
 	"github.com/iainjreid/source/view"
-	"github.com/gin-contrib/gzip"
-	storage "github.com/iainjreid/go-git-sql"
-	"github.com/gin-gonic/gin"
 )
 
 // Does this achieve anything? Requests for specific blobs should
@@ -23,13 +23,12 @@ func cacheMiddleware() gin.HandlerFunc {
 	}
 }
 
-func NewServer(storage *storage.Storage) error {
-	repoUrl := "git@localhost:~/hub.sr.ht"
-	// repoUrl := "../compose/.git"
+func NewServer(storage storage.Storer) error {
+	repoUrl := "https://github.com/iainjreid/source.git"
 
 	repo := git.CloneRepo(storage, repoUrl)
 	if err := repo.Error(); err != nil {
-		log.Fatal("Error whist cloning: ", err)
+		panic(err)
 	}
 
 	r := gin.Default()
@@ -42,7 +41,7 @@ func NewServer(storage *storage.Storage) error {
 
 	r.SetTrustedProxies(nil)
 
-	LoadTemplates(r, template.FuncMap{
+	loadTemplates(r, template.FuncMap{
 		"add": func(i1, i2 int) int {
 			return i1 + i2
 		},
@@ -111,18 +110,18 @@ func NewServer(storage *storage.Storage) error {
 }
 
 func renderFile(c *gin.Context, repo *git.Repo, revision string, filepath string) {
+	slog.DebugContext(c, "rendering file", "filepath", filepath)
 	dir, file := path.Split(filepath)
-	log.Printf("Loading: %s%s", dir, file)
-	
+
 	view := view.New(repo)
 	view = view.LoadCommit(revision)
 	view = view.LoadDir(dir)
-	
+
 	if _, err := view.LoadBlob(file, false); err != nil {
-		log.Printf("File not found: %s%s", dir, file)
+		slog.WarnContext(c, "file not found", "filepath", file)
 
 		if _, err := view.LoadBlob("/README.md", false); err != nil {
-			log.Printf("File not found: %s%s", dir, "/README.md")
+			slog.WarnContext(c, "file not found", "filepath", dir+"/README.md")
 		}
 	}
 
@@ -140,4 +139,3 @@ func formatAsDate(t time.Time) string {
 	year, month, day := t.Date()
 	return fmt.Sprintf("%d/%02d/%02d", year, month, day)
 }
-

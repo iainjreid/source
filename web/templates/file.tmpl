@@ -24,4 +24,81 @@
     {{ end }}
   </div>
 </div>
+<script>
+  // The anchor is used to determine which line to 'lock' when shift-selecting
+  // multiple lines.
+  let anchor, start, end;
+
+  const lines = document.querySelectorAll(".ln");
+  
+  lines.forEach((line, index) => {
+    line.addEventListener("click", (e) => {
+      const lineNumber = index + 1;
+
+      if (e.shiftKey && anchor !== null) {
+        highlightRange(anchor, lineNumber);
+      } else {
+        highlightRange(lineNumber, lineNumber);
+        anchor = lineNumber
+      }
+    });
+  });
+
+  // Process the URL hash onload if it exists
+  window.addEventListener('DOMContentLoaded', function () {
+    processUrlHash();
+    
+    if (start) {
+      // Scroll the hightligted line(s) into view
+      lines[start - 1]?.scrollIntoView({ block: "center" });
+    }
+  });
+
+  // Process changes during the lifetime of the application
+  window.addEventListener("hashchange", processUrlHash);
+
+  // Process the URL has fragment and highlight the targetted lines
+  function processUrlHash() {
+    let [, i1, i2] = window.location.hash.match(/#L(\d+)?(?:\-L)?(\d+)?/i) || [];
+    if (!i1 && !i2) {
+      return
+    }
+
+    i1 = parseInt(i1) || Infinity
+    i2 = parseInt(i2) || Infinity
+
+    start = Math.min(i1, i2)
+    end = Math.max(i1, i2) == Infinity ? start : end
+    
+    if (!anchor) {
+      anchor = start
+    }
+    
+    highlightRange(start, end);
+  }
+
+  // Replaces the URL hash fragment
+  function updateUrlHash(start, end) {
+    if (start === end) {
+      history.replaceState(null, "", `#L${start}`);
+    } else {
+      history.replaceState(null, "", `#L${start}-L${end}`);
+    }
+  }
+
+  // Clear the existing highlights
+  function highlightRange(start, end) {
+    document.querySelectorAll('.hl').forEach(el => {
+      el.classList.remove('hl');
+    });
+
+    const [min, max] = [Math.min(start, end), Math.max(start, end)];
+
+    for (let i = min; i <= max; i++) {
+      lines[i - 1].parentElement.classList.add("hl");
+    }
+
+    updateUrlHash(min, max);
+  }
+</script>
 {{ template "partials/base-stop.tmpl" . }}

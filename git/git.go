@@ -1,51 +1,18 @@
 package git
 
 import (
-	"fmt"
 	"io"
 	"log"
-	"os"
+	"log/slog"
 	"path"
 	"strings"
 
-	"github.com/iainjreid/go-git/v5"
-	"github.com/iainjreid/go-git/v5/plumbing"
-	"github.com/iainjreid/go-git/v5/plumbing/object"
-	"github.com/iainjreid/go-git/v5/plumbing/storer"
-	"github.com/iainjreid/go-git/v5/storage"
+	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/object"
+	"github.com/go-git/go-git/v5/plumbing/storer"
+	"github.com/go-git/go-git/v5/storage"
 )
-
-type RepoNotFoundError struct {
-	Name string
-}
-
-func (e *RepoNotFoundError) Error() string {
-	return fmt.Sprintf("repo not found: %s", e.Name)
-}
-
-type RevisionNotFoundError struct {
-	Revision string
-}
-
-func (e *RevisionNotFoundError) Error() string {
-	return fmt.Sprintf("revision not found: %s", e.Revision)
-}
-
-type FileNotFoundError struct {
-	Filepath string
-}
-
-func (e *FileNotFoundError) Error() string {
-	return fmt.Sprintf("file not found: %s", e.Filepath)
-}
-
-type DirectoryNotFoundError struct {
-	Dirpath string
-}
-
-func (e *DirectoryNotFoundError) Error() string {
-	return fmt.Sprintf("directory not found: %s", e.Dirpath)
-}
 
 type Repo struct {
 	repo *git.Repository
@@ -53,9 +20,11 @@ type Repo struct {
 }
 
 func CloneRepo(store storage.Storer, url string) *Repo {
-	repo, err := git.Clone(store, &git.CloneOptions{
+	slog.Info("cloning repo", "url", url)
+
+	repo, err := git.Clone(store, nil, &git.CloneOptions{
 		URL:          url,
-		Progress:     os.Stdout,
+		Progress:     io.Discard,
 		Mirror:       true,
 		NoCheckout:   true,
 		SingleBranch: false,
@@ -71,8 +40,10 @@ func CloneRepo(store storage.Storer, url string) *Repo {
 	}
 }
 
-func OpenRepo(store storage.Storer, _ string) *Repo {
-	repo, err := git.Open(store)
+func OpenRepo(store storage.Storer, url string) *Repo {
+	slog.Info("opening repo", "url", url)
+
+	repo, err := git.Open(store, nil)
 
 	return &Repo{
 		repo: repo,

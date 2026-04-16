@@ -5,15 +5,15 @@ import (
 	"errors"
 	"fmt"
 	"io"
-    
-	"github.com/iainjreid/go-git/v5/plumbing"
-	"github.com/iainjreid/go-git/v5/plumbing/format/packfile"
-	"github.com/iainjreid/go-git/v5/plumbing/protocol/packp"
-	"github.com/iainjreid/go-git/v5/plumbing/protocol/packp/capability"
-	"github.com/iainjreid/go-git/v5/plumbing/revlist"
-	"github.com/iainjreid/go-git/v5/plumbing/storer"
-	"github.com/iainjreid/go-git/v5/plumbing/transport"
-	"github.com/iainjreid/go-git/v5/utils/ioutil"
+
+	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/format/packfile"
+	"github.com/go-git/go-git/v5/plumbing/protocol/packp"
+	"github.com/go-git/go-git/v5/plumbing/protocol/packp/capability"
+	"github.com/go-git/go-git/v5/plumbing/revlist"
+	"github.com/go-git/go-git/v5/plumbing/storer"
+	"github.com/go-git/go-git/v5/plumbing/transport"
+	"github.com/go-git/go-git/v5/utils/ioutil"
 )
 
 type Loader interface {
