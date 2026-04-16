@@ -52,7 +52,7 @@ importing.
 ### SSH agent socket unavailable
 
 ```txt
-SSH agent requested but SSH_AUTH_SOCK not-specified"
+SSH agent requested but SSH_AUTH_SOCK not-specified
 ```
 
 If you see an error like this, it's highly likely that either your SSH
