@@ -5,7 +5,6 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"log/slog"
 	"os"
 	"time"
 
@@ -20,14 +19,26 @@ import (
 // config holds the program configuration settings that are read from
 // the command-line flags.
 type config struct {
-	dbUri string
+	debug     bool
+	logLevel  logger.Level
+	logFormat logger.Format
+	dbUri     string
+	sshKey    string
 }
 
 func main() {
 	var cfg config
 
 	// Define the accepted command-line flags and read them into the config struct
-	flag.StringVar(&cfg.dbUri, "db-uri", "", "Database URI to connect to")
+	flag.StringVar(&cfg.dbUri, "db-uri", "", "Database URI to connect to (required)")
+	flag.StringVar(&cfg.sshKey, "ssh-key", "", "A PEM encoded private key used to enable SSH access")
+
+	// Logging
+	flag.Var(&cfg.logLevel, "log-level", "The lowest level of logs to print")
+	flag.Var(&cfg.logFormat, "log-format", "The format ")
+
+	// Debugging
+	flag.BoolVar(&cfg.debug, "debug", false, "Enable debugging")
 
 	// Parse the command-line flags
 	flag.Parse()
@@ -36,10 +47,16 @@ func main() {
 		invalidConfig("Please specify a database URI")
 	}
 
+	if cfg.sshKey != "" {
+		if err := ssh.Init(cfg.sshKey); err != nil {
+			fatalError("Unable to parse PEM encoded SSH private key")
+		}
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	logger.Init(slog.LevelDebug, false, nil)
+	logger.Init(cfg.logLevel, cfg.logFormat, cfg.debug, nil)
 
 	db, err := postgres.Connect(ctx, cfg.dbUri)
 	if err != nil {
@@ -62,10 +79,12 @@ func main() {
 		return web.NewServer(storage)
 	})
 
-	wg.Go(func() error {
-		log.Println("Starting SSH server")
-		return ssh.NewServer(storage)
-	})
+	if cfg.sshKey != "" {
+		wg.Go(func() error {
+			log.Println("Starting SSH server")
+			return ssh.NewServer(storage)
+		})
+	}
 
 	err = wg.Wait()
 	if err != nil {
@@ -76,5 +95,10 @@ func main() {
 func invalidConfig(msg string) {
 	fmt.Fprintln(os.Stderr, msg)
 	flag.Usage()
+	os.Exit(1)
+}
+
+func fatalError(msg string) {
+	fmt.Fprintln(os.Stderr, msg)
 	os.Exit(1)
 }

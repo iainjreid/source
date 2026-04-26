@@ -16,9 +16,6 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-//go:embed id_rsa.pem
-var pem []byte
-
 type IdentityLoader struct {
 	storer storer.Storer
 }
@@ -49,19 +46,25 @@ func (l LoggedReadWriter) Write(data []byte) (int, error) {
 	return i, e
 }
 
-func NewServer(storage storer.Storer) error {
-	loader := NewIdentityLoader(storage)
-	svr := NewSSHServer(loader)
+var config = &ssh.ServerConfig{
+	NoClientAuth: true,
+}
 
-	config := &ssh.ServerConfig{
-		NoClientAuth: true,
-	}
+func Init(pemString string) error {
+	signer, err := ssh.ParsePrivateKey([]byte(pemString))
 
-	signer, err := ssh.ParsePrivateKey(pem)
 	if err != nil {
 		return err
 	}
+
 	config.AddHostKey(signer)
+
+	return nil
+}
+
+func NewServer(storage storer.Storer) error {
+	loader := NewIdentityLoader(storage)
+	svr := NewSSHServer(loader)
 
 	lis, err := net.Listen("tcp", ":2222")
 	if err != nil {
