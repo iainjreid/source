@@ -47,6 +47,23 @@ On start-up, the program will clone its own sourcecode into the database,
 this will change in future updates when the web interface supports
 importing.
 
+### Enabling SSH support
+
+To support interactions over SSH, you will have to provide Source with
+a private key to be used by its SSH server. To generate a local key pair
+run the following command and be sure to leave the password empty[^2].
+
+```sh
+ssh-keygen -m PEM -t rsa -b 4096 -f ./key # ... or any other path
+```
+
+This key can be passed to Source using the `--ssh-key` flag along with the
+other required runtime flags.
+
+```sh
+source --db-uri "postgresql://postgres@localhost" --ssh-key "$(cat ./key)"
+```
+
 ## Troubleshooting
 
 ### SSH agent socket unavailable
@@ -105,3 +122,6 @@ a repository.
     machines. Official information about trust authentication can be
     [found here](https://www.postgresql.org/docs/18/auth-trust.html).
 
+[^2]: Supporting password protected private keys would require the user to
+    provide plain text passwords in order for the program to decrypt them,
+    rendering any illusion of increased security redundant.
