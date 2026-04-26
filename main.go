@@ -35,7 +35,7 @@ func main() {
 
 	// Logging
 	flag.Var(&cfg.logLevel, "log-level", "The lowest level of logs to print")
-	flag.Var(&cfg.logFormat, "log-format", "The format ")
+	flag.Var(&cfg.logFormat, "log-format", "The format with which to print the logs")
 
 	// Debugging
 	flag.BoolVar(&cfg.debug, "debug", false, "Enable debugging")
