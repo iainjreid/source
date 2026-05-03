@@ -38,6 +38,8 @@ type config struct {
 	logFormat logger.Format
 	dbUri     string
 	sshKey    string
+	sshPort   int
+	webPort   int
 }
 
 func main() {
@@ -46,10 +48,14 @@ func main() {
 	// Define the accepted command-line flags and read them into the config struct
 	flag.StringVar(&cfg.dbUri, "db-uri", "", "Database URI to connect to (required)")
 	flag.StringVar(&cfg.sshKey, "ssh-key", "", "A PEM encoded private key used to enable SSH access")
+	flag.IntVar(&cfg.sshPort, "ssh-port", 2222, "The port to accept SSH connections through")
 
 	// Logging
 	flag.Var(&cfg.logLevel, "log-level", "The lowest level of logs to print")
 	flag.Var(&cfg.logFormat, "log-format", "The format with which to print the logs")
+
+	// Web
+	flag.IntVar(&cfg.webPort, "web-port", 8080, "The port to serve the web interface over")
 
 	// Debugging
 	flag.BoolVar(&cfg.debug, "debug", false, "Enable debugging")
@@ -90,13 +96,13 @@ func main() {
 	storage := storer.NewStorage(db.Pool)
 	wg.Go(func() error {
 		log.Println("Starting Web server")
-		return web.NewServer(storage)
+		return web.NewServer(storage, cfg.webPort)
 	})
 
 	if cfg.sshKey != "" {
 		wg.Go(func() error {
 			log.Println("Starting SSH server")
-			return ssh.NewServer(storage)
+			return ssh.NewServer(storage, cfg.sshPort)
 		})
 	}
 

@@ -76,11 +76,11 @@ func Init(pemString string) error {
 	return nil
 }
 
-func NewServer(storage storer.Storer) error {
+func NewServer(storage storer.Storer, port int) error {
 	loader := NewIdentityLoader(storage)
 	svr := NewSSHServer(loader)
 
-	lis, err := net.Listen("tcp", ":2222")
+	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
 	if err != nil {
 		return err
 	}

@@ -37,7 +37,7 @@ func cacheMiddleware() gin.HandlerFunc {
 	}
 }
 
-func NewServer(storage storage.Storer) error {
+func NewServer(storage storage.Storer, port int) error {
 	repoUrl := "https://github.com/iainjreid/source.git"
 
 	repo := git.CloneRepo(storage, repoUrl)
@@ -120,7 +120,7 @@ func NewServer(storage storage.Storer) error {
 		c.HTML(http.StatusOK, "feedback.tmpl", view.New(repo))
 	})
 
-	return r.Run()
+	return r.Run(fmt.Sprintf(":%d", port))
 }
 
 func renderFile(c *gin.Context, repo *git.Repo, revision string, filepath string) {
