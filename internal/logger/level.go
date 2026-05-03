@@ -24,7 +24,7 @@ import (
 type Level int
 
 const (
-	LevelDebug Level = iota
+	LevelDebug Level = iota - 1
 	LevelInfo
 	LevelWarn
 	LevelError
