@@ -59,7 +59,7 @@ func TestInvalidLevel(t *testing.T) {
 
 	for _, tt := range levelfailures {
 		t.Run(tt.in, func(t *testing.T) {
-			if got, want := level.Set(tt.in), logger.InvalidLevelString(tt.in); got != want {
+			if got, want := level.Set(tt.in), logger.LevelStringError(tt.in); got != want {
 				t.Errorf("Level.Set(%v) = %v, want %s", tt.in, got, want)
 			}
 		})

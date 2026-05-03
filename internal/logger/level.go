@@ -19,6 +19,8 @@ import (
 	"log/slog"
 )
 
+// A Level is an abstraction over the [slog.Level] type that implements the
+// [flag.Value] interface.
 type Level int
 
 const (
@@ -28,6 +30,8 @@ const (
 	LevelError
 )
 
+// String satisfies the [flag.Value] interface, returning a string form of the
+// underlying Level.
 func (l Level) String() string {
 	switch l {
 	case LevelDebug:
@@ -39,10 +43,12 @@ func (l Level) String() string {
 	case LevelError:
 		return "error"
 	default:
-		return fmt.Sprintf("%d", int(l))
+		return ""
 	}
 }
 
+// Set satisfies the [flag.Value] interface and updates the Level. It accepts a
+// string and may return an error if it cannot be parsed.
 func (l *Level) Set(str string) error {
 	switch str {
 	case "debug":
@@ -54,12 +60,13 @@ func (l *Level) Set(str string) error {
 	case "error":
 		*l = LevelError
 	default:
-		return InvalidLevelString(str)
+		return LevelStringError(str)
 	}
 
 	return nil
 }
 
+// ToSlogLevel returns the appropriate [slog.Level] for the Level.
 func (l Level) ToSlogLevel() slog.Level {
 	switch l {
 	case LevelDebug:
@@ -75,8 +82,9 @@ func (l Level) ToSlogLevel() slog.Level {
 	}
 }
 
-type InvalidLevelString string
+// A LevelStringError records a [Level] string that was unable to be parsed.
+type LevelStringError string
 
-func (e InvalidLevelString) Error() string {
+func (e LevelStringError) Error() string {
 	return fmt.Sprintf("logger: invalid level string '%s'", string(e))
 }

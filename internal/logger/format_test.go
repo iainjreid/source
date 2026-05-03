@@ -55,7 +55,7 @@ func TestInvalidFormat(t *testing.T) {
 
 	for _, tt := range formatfailures {
 		t.Run(tt.in, func(t *testing.T) {
-			if got, want := format.Set(tt.in), logger.InvalidFormatString(tt.in); got != want {
+			if got, want := format.Set(tt.in), logger.FormatStringError(tt.in); got != want {
 				t.Errorf("Format.Set(%v) = %v, want %s", tt.in, got, want)
 			}
 		})

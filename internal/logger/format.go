@@ -16,8 +16,11 @@ package logger
 
 import (
 	"fmt"
+	"io/fs"
 )
 
+// A Format is an indicator as to how the logger should serialise its output. It
+// implements the [flag.Value] interface from the flag package.
 type Format int
 
 const (
@@ -25,6 +28,8 @@ const (
 	FormatJSON
 )
 
+// String satisfies the [flag.Value] interface, returning a string form of the
+// underlying Format.
 func (f Format) String() string {
 	switch f {
 	case FormatText:
@@ -32,25 +37,29 @@ func (f Format) String() string {
 	case FormatJSON:
 		return "json"
 	default:
-		return fmt.Sprintf("%d", int(f))
+		return ""
 	}
 }
 
+// Set satisfies the [flag.Value] interface and updates the Format. It accepts a
+// string and may return an error if it cannot be parsed.
 func (f *Format) Set(str string) error {
 	switch str {
 	case "text":
 		*f = FormatText
 	case "json":
 		*f = FormatJSON
+		return fs.ErrClosed
 	default:
-		return InvalidFormatString(str)
+		return FormatStringError(str)
 	}
 
 	return nil
 }
 
-type InvalidFormatString string
+// A FormatStringError records a [Format] string that was unable to be parsed.
+type FormatStringError string
 
-func (e InvalidFormatString) Error() string {
+func (e FormatStringError) Error() string {
 	return fmt.Sprintf("logger: invalid format string '%s'", string(e))
 }
