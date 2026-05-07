@@ -27,26 +27,25 @@ import (
 )
 
 // Init initialises the default log/slog logger.
-func Init(level Level, format Format, debug bool, attrs []slog.Attr) {
+func Init(level slog.Level, json bool, debug bool, attrs []slog.Attr) {
 	var handler slog.Handler
 
 	// If debug is enable, override the log level accordingly.
 	if debug {
-		level = LevelDebug
+		level = slog.LevelDebug
 	}
 
 	// Logs are written to STDOUT and will include source references if the
 	// debug flag is set.
 	opts := &slog.HandlerOptions{
-		Level:     level.ToSlogLevel(),
+		Level:     level,
 		AddSource: debug,
 	}
 
-	switch format {
-	case FormatText:
-		handler = slog.NewTextHandler(os.Stdout, opts)
-	case FormatJSON:
+	if json {
 		handler = slog.NewJSONHandler(os.Stdout, opts)
+	} else {
+		handler = slog.NewTextHandler(os.Stdout, opts)
 	}
 
 	// TODO: Document which attributes are to be included in logs.

@@ -32,15 +32,14 @@ git clone https://github.com/iainjreid/source.git && cd source
 go mod download
 
 # Build
-go build -tags "standalone"
+go build -tags "standalone" ./cmd/src
 ```
 
 With the project built, and a Postgres instance standing by you should be
-able to start `source` without any further steps other than passing the
-connection URI as a runtime argument.
+able to start `src` without any further steps other than passing the connection URI as a runtime argument.
 
 ```sh
-source --db-uri "postgresql://postgres@localhost"
+./src start --db "postgresql://postgres@localhost"
 ```
 
 On start-up, the program will clone its own sourcecode into the database,
@@ -61,7 +60,7 @@ This key can be passed to Source using the `--ssh-key` flag along with the
 other required runtime flags.
 
 ```sh
-source --db-uri "postgresql://postgres@localhost" --ssh-key "$(cat ./key)"
+./src start --db "postgresql://postgres@localhost" --ssh-id-path ./key
 ```
 
 ## Troubleshooting
