@@ -55,7 +55,7 @@ func main() {
 		version = cmd.Bool(false, "version", "v")
 	)
 
-	cmd.Parse(os.Args)
+	cmd.Parse(os.Args[1:])
 
 	if *help {
 		cli.Fatal(1, usage)
