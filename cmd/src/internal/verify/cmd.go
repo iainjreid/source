@@ -23,7 +23,7 @@ import (
 
 var usage = `Usage:
     src verify [--db <uri>] [-q | --quiet] [-v | --verbose] [-j | --json]
-	           [-h | --help]
+	           [-h | --help] [--debug]
 
 Before running a server, you can verify that the target database has been
 initalised and is ready to accept connections from src without running into
@@ -38,6 +38,8 @@ Options:
     -v, --verbose				Print all logs
     -j, --json                  Display JSON output
     -h, --help                  Display this message
+
+Additional Options:
     --debug                     Enable debugging
 
 Example:
