@@ -23,7 +23,7 @@ import (
 	"github.com/iainjreid/source/cmd/src/internal/manage"
 	"github.com/iainjreid/source/cmd/src/internal/start"
 	"github.com/iainjreid/source/cmd/src/internal/verify"
-	"github.com/iainjreid/source/internal/debug"
+	"github.com/iainjreid/source/internal/buildinfo"
 )
 
 const usage = `Usage:
@@ -62,7 +62,7 @@ func main() {
 	}
 
 	if *version {
-		cli.Fatalf(1, "src version %s\n", debug.Version)
+		cli.Fatal(1, buildinfo.String())
 	}
 
 	switch os.Args[1] {
