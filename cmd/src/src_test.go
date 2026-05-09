@@ -23,7 +23,7 @@ import (
 func TestBinary(t *testing.T) {
 	test := cli.PrepareBinary(t)
 
-	stdout, stderr := test(1)
+	stdout, stderr := test(cli.BadUsage)
 	if got, want := stdout.String(), ""; got != want {
 		t.Errorf("stdout want '%s' got '%s'", want, got)
 	}
@@ -32,12 +32,30 @@ func TestBinary(t *testing.T) {
 		t.Errorf("stderr want '%s' got '%s'", want, got)
 	}
 
-	stdout, stderr = test(1, "start")
+	stdout, stderr = test(cli.BadUsage, "start")
 	if got, want := stdout.String(), ""; got != want {
 		t.Errorf("stdout want '%s' got '%s'", want, got)
 	}
 
 	if got, want := stderr.String(), "Run 'src start --help' for usage.\n"; got != want {
+		t.Errorf("stderr want '%s' got '%s'", want, got)
+	}
+
+	stdout, stderr = test(cli.BadUsage, "manage")
+	if got, want := stdout.String(), ""; got != want {
+		t.Errorf("stdout want '%s' got '%s'", want, got)
+	}
+
+	if got, want := stderr.String(), "Run 'src manage --help' for usage.\n"; got != want {
+		t.Errorf("stderr want '%s' got '%s'", want, got)
+	}
+
+	stdout, stderr = test(cli.BadUsage, "verify")
+	if got, want := stdout.String(), ""; got != want {
+		t.Errorf("stdout want '%s' got '%s'", want, got)
+	}
+
+	if got, want := stderr.String(), "Run 'src verify --help' for usage.\n"; got != want {
 		t.Errorf("stderr want '%s' got '%s'", want, got)
 	}
 }

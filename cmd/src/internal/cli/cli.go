@@ -15,29 +15,99 @@
 package cli
 
 import (
+	"errors"
 	"flag"
+	"fmt"
+	"log/slog"
+	"os"
 )
 
-func String(flag *flag.FlagSet, value string, long, short string) *string {
-	out := flag.String(long, value, "")
+var (
+	LoggerFlagsError = errors.New("-q/--quiet can't be used with -v/--verbose")
+)
+
+// ResolveLoggerFlags takes flags associated with configuring the logger and
+// determines the correct [slog.Level] for the selection.
+func ResolveLoggerFlags(quiet, verbose *bool) (slog.Level, error) {
+	var level slog.Level
+	var err error
+
+	switch {
+	case *quiet && *verbose:
+		err = LoggerFlagsError
+
+	case *quiet:
+		level = slog.LevelError
+
+	case *verbose:
+		level = slog.LevelDebug
+	}
+
+	return level, err
+}
+
+type Cmd struct {
+	*flag.FlagSet
+}
+
+func New(name string) Cmd {
+	flag := flag.NewFlagSet(name, flag.ExitOnError)
+
+	flag.Usage = func() {
+		Fatalf(BadUsage, "Run '%s --help' for usage.\n", name)
+	}
+
+	return Cmd{flag}
+}
+
+func (c *Cmd) ExplainUsage(msg string) {
+	Error(msg)
+	c.Usage()
+}
+
+func (c *Cmd) String(value string, long, short string) *string {
+	out := new(string)
+	c.StringVar(out, long, value, "")
 	if short != "" {
-		flag.StringVar(out, short, value, "")
+		c.StringVar(out, short, value, "")
 	}
 	return out
 }
 
-func Int(flag *flag.FlagSet, value int, long, short string) *int {
-	out := flag.Int(long, value, "")
+func (c *Cmd) Int(value int, long, short string) *int {
+	out := new(int)
+	c.IntVar(out, long, value, "")
 	if short != "" {
-		flag.IntVar(out, short, value, "")
+		c.IntVar(out, short, value, "")
 	}
 	return out
 }
 
-func Bool(flag *flag.FlagSet, value bool, long, short string) *bool {
-	out := flag.Bool(long, value, "")
+func (c *Cmd) Bool(value bool, long, short string) *bool {
+	out := new(bool)
+	c.BoolVar(out, long, value, "")
 	if short != "" {
-		flag.BoolVar(out, short, value, "")
+		c.BoolVar(out, short, value, "")
 	}
 	return out
+}
+
+var (
+	Success  = 0
+	Failure  = 1
+	BadUsage = 64
+)
+
+func Error(msg string) {
+	fmt.Fprintln(os.Stderr, msg)
+}
+
+func Fatal(code int, msg string) {
+	fmt.Fprintln(os.Stderr, msg)
+	os.Exit(code)
+}
+
+func Fatalf(code int, format string, a ...any) {
+	fmt.Fprintf(os.Stderr, format, a...)
+	os.Exit(code)
 }

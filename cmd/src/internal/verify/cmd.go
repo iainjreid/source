@@ -15,11 +15,8 @@
 package verify
 
 import (
-	"flag"
-	"fmt"
-	"os"
-
 	"github.com/iainjreid/source/cmd/src/internal/cli"
+	"github.com/iainjreid/source/internal/logger"
 )
 
 var usage = `Usage:
@@ -39,43 +36,43 @@ Options:
     -v, --verbose				Print all logs
     -j, --json                  Display JSON output
     -h, --help                  Display this message
+    --debug                     Enable debugging
 
 Example:
     $ src verify --db postgresql://postgres@localhost
 `
 
 func Cmd(args []string) {
-	flag := flag.NewFlagSet("start", flag.ExitOnError)
-
-	flag.Usage = func() {
-		fmt.Fprint(os.Stderr, "Run 'src verify --help' for usage.\n")
-	}
+	cmd := cli.New("src verify")
 
 	if len(args) == 0 {
-		flag.Usage()
-		os.Exit(1)
+		cmd.Usage()
 	}
 
 	var (
-		_       = cli.String(flag, "", "db", "")
-		quiet   = cli.Bool(flag, false, "quiet", "q")
-		verbose = cli.Bool(flag, false, "verbose", "v")
-		_       = cli.Bool(flag, false, "json", "j")
-		help    = cli.Bool(flag, false, "help", "h")
+		db      = cmd.String("", "db", "")
+		quiet   = cmd.Bool(false, "quiet", "q")
+		verbose = cmd.Bool(false, "verbose", "v")
+		json    = cmd.Bool(false, "json", "j")
+		help    = cmd.Bool(false, "help", "h")
+		debug   = cmd.Bool(false, "debug", "")
 	)
 
-	flag.Parse(args)
+	cmd.Parse(args)
 
 	if *help {
-		fmt.Fprint(os.Stderr, usage)
-		os.Exit(1)
+		cli.Fatal(1, usage)
 	}
 
-	if *quiet && *verbose {
-		fmt.Fprint(os.Stderr, "-q/--quiet can't be used with -v/--verbose")
-		os.Exit(1)
+	if level, err := cli.ResolveLoggerFlags(quiet, verbose); err != nil {
+		cmd.ExplainUsage(err.Error())
+	} else {
+		logger.Init(level, *json, *debug, nil)
 	}
 
-	fmt.Fprint(os.Stderr, "Not yet implemented...\n")
-	os.Exit(1)
+	if *db == "" {
+		cmd.ExplainUsage("--db is required")
+	}
+
+	cli.Fatal(1, "Not yet implemented...")
 }

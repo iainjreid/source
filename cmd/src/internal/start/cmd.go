@@ -16,10 +16,7 @@ package start
 
 import (
 	"context"
-	"flag"
-	"fmt"
 	"log"
-	"log/slog"
 	"os"
 	"time"
 
@@ -58,69 +55,56 @@ Example:
 `
 
 func Cmd(args []string) {
-	flag := flag.NewFlagSet("start", flag.ExitOnError)
-
-	flag.Usage = func() {
-		fmt.Fprint(os.Stderr, "Run 'src start --help' for usage.\n")
-	}
+	cmd := cli.New("src start")
 
 	if len(args) == 0 {
-		flag.Usage()
-		os.Exit(1)
+		cmd.Usage()
 	}
 
 	var (
-		db        = cli.String(flag, "", "db", "")
-		quiet     = cli.Bool(flag, false, "quiet", "q")
-		verbose   = cli.Bool(flag, false, "verbose", "v")
-		json      = cli.Bool(flag, false, "json", "j")
-		help      = cli.Bool(flag, false, "help", "h")
-		sshIdPath = cli.String(flag, "", "ssh-id-path", "i")
-		sshId     = cli.String(flag, "", "ssh-id", "I")
-		sshPort   = cli.Int(flag, 2222, "ssh-port", "")
-		httpPort  = cli.Int(flag, 8080, "http-port", "")
-		debug     = cli.Bool(flag, false, "debug", "")
+		db        = cmd.String("", "db", "")
+		quiet     = cmd.Bool(false, "quiet", "q")
+		verbose   = cmd.Bool(false, "verbose", "v")
+		json      = cmd.Bool(false, "json", "j")
+		help      = cmd.Bool(false, "help", "h")
+		sshIdPath = cmd.String("", "ssh-id-path", "i")
+		sshId     = cmd.String("", "ssh-id", "I")
+		sshPort   = cmd.Int(2222, "ssh-port", "")
+		httpPort  = cmd.Int(8080, "http-port", "")
+		debug     = cmd.Bool(false, "debug", "")
 	)
 
-	flag.Parse(args)
+	cmd.Parse(args)
 
 	if *help {
-		fmt.Fprint(os.Stderr, usage)
-		os.Exit(1)
+		cli.Fatal(1, usage)
+	}
+
+	if level, err := cli.ResolveLoggerFlags(quiet, verbose); err != nil {
+		cmd.ExplainUsage(err.Error())
+	} else {
+		logger.Init(level, *json, *debug, nil)
 	}
 
 	if *db == "" {
-		fmt.Fprint(os.Stderr, "--db is required")
-		os.Exit(1)
-	}
-
-	if *quiet && *verbose {
-		fmt.Fprint(os.Stderr, "-q/--quiet can't be used with -v/--verbose")
-		os.Exit(1)
+		cmd.ExplainUsage("--db is required")
 	}
 
 	if *sshIdPath != "" && *sshId != "" {
-		fmt.Fprint(os.Stderr, "-i/--ssh-id-path can't be used with -I/--ssh-id")
-		os.Exit(1)
-	}
-
-	if *quiet {
-		logger.Init(slog.LevelError, *json, *debug, nil)
+		cmd.ExplainUsage("-i/--ssh-id-path can't be used with -I/--ssh-id")
 	}
 
 	if *sshIdPath != "" {
 		data, err := os.ReadFile(*sshIdPath)
 		if err != nil {
-			fmt.Fprint(os.Stderr, "Unable to read SSH private key")
-			os.Exit(1)
+			cli.Fatal(cli.Failure, "Unable to read SSH private key")
 		}
 		*sshId = string(data)
 	}
 
 	if *sshId != "" {
 		if err := ssh.Init(*sshId); err != nil {
-			fmt.Fprint(os.Stderr, "Unable to parse PEM encoded SSH private key")
-			os.Exit(1)
+			cli.Fatal(cli.Failure, "Unable to parse PEM encoded SSH private key")
 		}
 	}
 
@@ -129,15 +113,15 @@ func Cmd(args []string) {
 
 	pg, err := postgres.Connect(ctx, *db)
 	if err != nil {
-		log.Fatalf("Error whilst connecting to DB: %s", err)
+		cli.Fatalf(cli.Failure, "Error whilst connecting to DB: %s", err)
 	}
 
 	if err := pg.HardReset(ctx); err != nil {
-		log.Fatalf("Failed to reset DB: %s", err)
+		cli.Fatalf(cli.Failure, "Failed to reset DB: %s", err)
 	}
 
 	if err := pg.EnsureReady(ctx); err != nil {
-		log.Fatalf("Failed to setup DB: %s", err)
+		cli.Fatalf(cli.Failure, "Failed to setup DB: %s", err)
 	}
 
 	wg := new(errgroup.Group)

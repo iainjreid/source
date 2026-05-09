@@ -15,7 +15,6 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"os"
 
@@ -44,30 +43,25 @@ Commands:
 `
 
 func main() {
-	flag.Usage = func() {
-		fmt.Fprint(os.Stderr, "Run 'src --help' for usage.\n")
-	}
+	cmd := cli.New("src")
 
 	if len(os.Args) == 1 {
-		flag.Usage()
-		os.Exit(1)
+		cmd.Usage()
 	}
 
 	var (
-		help    = cli.Bool(flag.CommandLine, false, "help", "h")
-		version = cli.Bool(flag.CommandLine, false, "version", "v")
+		help    = cmd.Bool(false, "help", "h")
+		version = cmd.Bool(false, "version", "v")
 	)
 
-	flag.Parse()
+	cmd.Parse(os.Args)
 
 	if *help {
-		fmt.Fprint(os.Stderr, usage)
-		os.Exit(1)
+		cli.Fatal(1, usage)
 	}
 
 	if *version {
-		fmt.Printf("src version %s\n", debug.Version)
-		os.Exit(1)
+		cli.Fatalf(1, "src version %s\n", debug.Version)
 	}
 
 	switch os.Args[1] {
@@ -82,7 +76,6 @@ func main() {
 
 	default:
 		fmt.Printf("'%s' is not a src command.\n", os.Args[1])
-		flag.Usage()
-		os.Exit(1)
+		cmd.Usage()
 	}
 }
