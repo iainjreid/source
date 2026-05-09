@@ -15,6 +15,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 
@@ -66,13 +67,13 @@ func main() {
 
 	switch os.Args[1] {
 	case "start":
-		start.Cmd(os.Args[2:])
+		start.Cmd(context.TODO(), os.Args[2:])
 
 	case "manage":
-		manage.Cmd(os.Args[2:])
+		manage.Cmd(context.TODO(), os.Args[2:])
 
 	case "verify":
-		verify.Cmd(os.Args[2:])
+		verify.Cmd(context.TODO(), os.Args[2:])
 
 	default:
 		fmt.Printf("'%s' is not a src command.\n", os.Args[1])

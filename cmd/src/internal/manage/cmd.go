@@ -15,6 +15,8 @@
 package manage
 
 import (
+	"context"
+
 	"github.com/iainjreid/source/cmd/src/internal/cli"
 	"github.com/iainjreid/source/internal/logger"
 )
@@ -38,7 +40,7 @@ Example:
     $ src manage --db postgresql://postgres@localhost --setup
 `
 
-func Cmd(args []string) {
+func Cmd(_ context.Context, args []string) {
 	cmd := cli.New("src manage")
 
 	if len(args) == 0 {

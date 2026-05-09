@@ -54,7 +54,7 @@ Example:
     $ src start --db postgresql://postgres@localhost
 `
 
-func Cmd(args []string) {
+func Cmd(ctx context.Context, args []string) {
 	cmd := cli.New("src start")
 
 	if len(args) == 0 {
@@ -108,7 +108,7 @@ func Cmd(args []string) {
 		}
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
 	pg, err := postgres.Connect(ctx, *db)

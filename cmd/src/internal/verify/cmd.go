@@ -15,6 +15,8 @@
 package verify
 
 import (
+	"context"
+
 	"github.com/iainjreid/source/cmd/src/internal/cli"
 	"github.com/iainjreid/source/internal/logger"
 )
@@ -42,7 +44,7 @@ Example:
     $ src verify --db postgresql://postgres@localhost
 `
 
-func Cmd(args []string) {
+func Cmd(_ context.Context, args []string) {
 	cmd := cli.New("src verify")
 
 	if len(args) == 0 {
