@@ -103,7 +103,7 @@ func NewServer(storage *pgstorer.Storage, port int) error {
 
 			sshConn, chanc, reqc, err := ssh.NewServerConn(conn, config)
 			if err != nil {
-				slog.Error("error whilst preparing connection", err)
+				slog.Error("error whilst preparing connection", "err", err)
 				return
 			}
 			defer sshConn.Close()
@@ -113,7 +113,7 @@ func NewServer(storage *pgstorer.Storage, port int) error {
 				case "session":
 					ch, reqc, err := chanr.Accept()
 					if err != nil {
-						slog.Error("error whilst accepting connection", err)
+						slog.Error("error whilst accepting connection", "err", err)
 						return
 					}
 					handleSSHSession(svr, ch, reqc)
@@ -149,7 +149,7 @@ func handleSSHSession(svr *server, ch ssh.Channel, reqc <-chan *ssh.Request) {
 			ssh.Unmarshal(req.Payload, &payload)
 			args, err := shlex.Split(payload.Value, true)
 			if err != nil {
-				slog.Error("error whilst parsing lex args", err)
+				slog.Error("error whilst parsing lex args", "err", err)
 				exitCode = 1
 				return
 			}
@@ -165,13 +165,13 @@ func handleSSHSession(svr *server, ch ssh.Channel, reqc <-chan *ssh.Request) {
 			switch cmd {
 			case "git-upload-pack": // read
 				if gp := envs["GIT_PROTOCOL"]; gp != "version=2" {
-					slog.Warn("unhandled GIT_PROTOCOL", gp)
+					slog.Warn("unhandled GIT_PROTOCOL", "protocol", gp)
 					exitCode = 1
 					return
 				}
 				err = handleUploadPack(svr, ch, args[1])
 				if err != nil {
-					slog.Error("error whilst handling upload pack", err)
+					slog.Error("error whilst handling upload pack", "err", err)
 					exitCode = 1
 					return
 				}
@@ -181,7 +181,7 @@ func handleSSHSession(svr *server, ch ssh.Channel, reqc <-chan *ssh.Request) {
 			case "git-receive-pack": // write
 				err = handleReceivePack(svr, ch, args[1])
 				if err != nil {
-					slog.Error("error whilst handling upload pack", err)
+					slog.Error("error whilst handling upload pack", "err", err)
 					exitCode = 1
 					return
 				}
