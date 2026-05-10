@@ -18,6 +18,9 @@ import (
 	_ "embed"
 )
 
+//go:embed tables/create-repo.sql
+var CreateRepoQuery string
+
 //go:embed create-indexes.sql
 var CreateIndexesQuery string
 

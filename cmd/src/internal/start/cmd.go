@@ -16,7 +16,7 @@ package start
 
 import (
 	"context"
-	"log"
+	"log/slog"
 	"os"
 	"time"
 
@@ -116,31 +116,23 @@ func Cmd(ctx context.Context, args []string) {
 		cli.Fatalf(cli.Failure, "Error whilst connecting to DB: %s", err)
 	}
 
-	if err := pg.HardReset(ctx); err != nil {
-		cli.Fatalf(cli.Failure, "Failed to reset DB: %s", err)
-	}
-
-	if err := pg.EnsureReady(ctx); err != nil {
-		cli.Fatalf(cli.Failure, "Failed to setup DB: %s", err)
-	}
-
 	wg := new(errgroup.Group)
 
-	storage := storer.NewStorage(pg.Pool)
+	storage := storer.NewStorage(pg.Pool, "")
 	wg.Go(func() error {
-		log.Println("Starting Web server")
+		slog.Info("Starting Web server")
 		return web.NewServer(storage, *httpPort)
 	})
 
 	if *sshId != "" {
 		wg.Go(func() error {
-			log.Println("Starting SSH server")
+			slog.Info("Starting SSH server")
 			return ssh.NewServer(storage, *sshPort)
 		})
 	}
 
 	err = wg.Wait()
 	if err != nil {
-		log.Println(err)
+		slog.Error(err.Error())
 	}
 }

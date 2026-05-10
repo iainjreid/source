@@ -18,6 +18,7 @@ import (
 	"io"
 	"log"
 	"log/slog"
+	"net/url"
 	"path"
 	"strings"
 
@@ -25,18 +26,24 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/storer"
-	"github.com/go-git/go-git/v5/storage"
+	pgstorer "github.com/iainjreid/source/db/postgres/storer"
 )
 
 type Repo struct {
+	Name string
 	repo *git.Repository
 	err  error
 }
 
-func CloneRepo(store storage.Storer, url string) *Repo {
+func CloneRepo(store *pgstorer.Storage, url string) *Repo {
 	slog.Info("cloning repo", "url", url)
 
-	repo, err := git.Clone(store, nil, &git.CloneOptions{
+	name, err := GetRepoName(url)
+	if err != nil {
+		panic(err)
+	}
+
+	repo, err := git.Clone(store.WithName(name), nil, &git.CloneOptions{
 		URL:          url,
 		Progress:     io.Discard,
 		Mirror:       true,
@@ -45,29 +52,30 @@ func CloneRepo(store storage.Storer, url string) *Repo {
 	})
 
 	if err != nil {
-		panic(err)
+		slog.Error("error whilst cloning the repository", "err", err)
 	}
 
 	return &Repo{
+		Name: name,
 		repo: repo,
 		err:  err,
 	}
 }
 
-func OpenRepo(store storage.Storer, url string) *Repo {
-	slog.Info("opening repo", "url", url)
-
-	repo, err := git.Open(store, nil)
+func OpenRepo(store *pgstorer.Storage, name string) *Repo {
+	repo, err := git.Open(store.WithName(name), nil)
 
 	return &Repo{
+		Name: name,
 		repo: repo,
 		err:  err,
 	}
 }
 
 type Branch struct {
-	Hash string `json:"hash"`
-	Name string `json:"name"`
+	RepoName string
+	Hash     string `json:"hash"`
+	Name     string `json:"name"`
 }
 
 func (r *Repo) Error() error {
@@ -89,8 +97,9 @@ func (r *Repo) GetBranches() ([]Branch, error) {
 	var branches []Branch
 	iter.ForEach(func(ref *plumbing.Reference) error {
 		branches = append(branches, Branch{
-			Hash: ref.Hash().String(),
-			Name: ref.Name().Short(),
+			RepoName: r.Name,
+			Hash:     ref.Hash().String(),
+			Name:     ref.Name().Short(),
 		})
 		return nil
 	})
@@ -323,7 +332,7 @@ func (c *Commit) GetTree(dirpath string, includeCommits bool) (*TreeEntryMap, er
 			return nil, err
 		}
 
-		file := NewTreeEntry(path.Base(name), path.Join("blob", c.ptr.Hash.String(), name), entry.Hash.String(), entry.Mode.IsFile(), nil)
+		file := NewTreeEntry(path.Base(name), path.Join(c.repo.Name, "blob", c.ptr.Hash.String(), name), entry.Hash.String(), entry.Mode.IsFile(), nil)
 
 		if file.IsFile {
 			treeEntryMap.AddFile(file)
@@ -387,7 +396,7 @@ func (c *Commit) GetTree(dirpath string, includeCommits bool) (*TreeEntryMap, er
 	// 	return files[i].Name < files[j].Name
 	// })
 
-	err = treeEntryMap.InitHierarchy(path.Join("blob", c.ptr.Hash.String()))
+	err = treeEntryMap.InitHierarchy(path.Join(c.repo.Name, "blob", c.ptr.Hash.String()))
 	return treeEntryMap, err
 }
 
@@ -413,4 +422,16 @@ func Must[T any](val T, err error) T {
 
 	return val
 
+}
+
+func GetRepoName(repoUrl string) (string, error) {
+	u, err := url.Parse(repoUrl)
+	if err != nil {
+		return "", err
+	}
+
+	name := path.Base(u.Path)
+	name = strings.TrimSuffix(name, ".git")
+
+	return name, nil
 }

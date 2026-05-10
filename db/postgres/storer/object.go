@@ -30,6 +30,7 @@ import (
 )
 
 type ObjectStorage struct {
+	name   string
 	pool   *pgxpool.Pool
 	buffer map[string]plumbing.EncodedObject
 }
@@ -49,7 +50,7 @@ func (o *ObjectStorage) EncodedObject(objType plumbing.ObjectType, objHash plumb
 		}
 	}
 
-	rows, err := o.pool.Query(context.Background(), `SELECT type, cont FROM "source_objects" WHERE hash = $1;`, objHash.String())
+	rows, err := o.pool.Query(context.Background(), fmt.Sprintf(`SELECT type, cont FROM "%s_objects" WHERE hash = $1;`, o.name), objHash.String())
 
 	if err != nil {
 		return nil, &plumbing.UnexpectedError{
@@ -82,7 +83,7 @@ func (o *ObjectStorage) EncodedObject(objType plumbing.ObjectType, objHash plumb
 // IterEncodedObjects returns an iterator that traverses all of the available
 // objects of the specified type.
 func (o *ObjectStorage) IterEncodedObjects(objType plumbing.ObjectType) (storer.EncodedObjectIter, error) {
-	rows, err := o.pool.Query(context.Background(), `SELECT type, cont FROM "source_objects" WHERE type = $1;`, objType)
+	rows, err := o.pool.Query(context.Background(), fmt.Sprintf(`SELECT type, cont FROM "%s_objects" WHERE type = $1;`, o.name), objType)
 
 	if err != nil {
 		return nil, &plumbing.UnexpectedError{
@@ -104,7 +105,7 @@ func (o *ObjectStorage) EncodedObjectSize(hash plumbing.Hash) (int64, error) {
 		}
 	}
 
-	rows, err := o.pool.Query(context.Background(), `SELECT length FROM "source_objects" WHERE hash = $1;`, hash)
+	rows, err := o.pool.Query(context.Background(), fmt.Sprintf(`SELECT length FROM "%s_objects" WHERE hash = $1;`, o.name), hash)
 
 	if err != nil {
 		return 0, &plumbing.UnexpectedError{
@@ -131,7 +132,7 @@ func (o *ObjectStorage) HasEncodedObject(hash plumbing.Hash) error {
 		}
 	}
 
-	rows, err := o.pool.Query(context.Background(), `SELECT hash FROM "source_objects" WHERE hash = '$1';`, hash)
+	rows, err := o.pool.Query(context.Background(), fmt.Sprintf(`SELECT hash FROM "%s_objects" WHERE hash = '$1';`, o.name), hash)
 
 	if err != nil {
 		return &plumbing.UnexpectedError{
@@ -170,7 +171,7 @@ func (o *ObjectStorage) SetEncodedObject(obj plumbing.EncodedObject) (plumbing.H
 	//
 	// Similar to the above, if an error occurs we will return a ZeroHash along
 	// with the error returned by the database driver.
-	if _, err := o.pool.Exec(context.Background(), `INSERT INTO source_objects(type, hash, cont, length) VALUES($1, $2, $3, $4);`, obj.Type(), obj.Hash(), cont, obj.Size()); err != nil {
+	if _, err := o.pool.Exec(context.Background(), fmt.Sprintf(`INSERT INTO %s_objects(type, hash, cont, length) VALUES($1, $2, $3, $4);`, o.name), obj.Type(), obj.Hash(), cont, obj.Size()); err != nil {
 		return plumbing.ZeroHash, &plumbing.UnexpectedError{
 			Err: err,
 		}
@@ -326,7 +327,7 @@ func (o *ObjectStorage) CommitCopy() error {
 				buf: chunk,
 			}
 
-			count, err := chunkConn.CopyFrom(ctx, pgx.Identifier{"source_objects"}, []string{"type", "hash", "parent_hash", "cont", "length"}, source)
+			count, err := chunkConn.CopyFrom(ctx, pgx.Identifier{o.name + "_objects"}, []string{"type", "hash", "parent_hash", "cont", "length"}, source)
 			if err != nil {
 				return err
 			}

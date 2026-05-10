@@ -44,7 +44,7 @@ type server struct {
 
 // NewServer returns a transport.Transport implementing a git server,
 // independent of transport. Each transport must wrap this.
-func NewSSHServer(loader Loader) transport.Transport {
+func NewSSHServer(loader Loader) *server {
 	return &server{
 		loader,
 		&handler{asClient: false},

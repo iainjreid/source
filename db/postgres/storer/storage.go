@@ -32,9 +32,13 @@ type Storage struct {
 	memory.ConfigStorage
 }
 
-func NewStorage(pool *pgxpool.Pool) *Storage {
+func NewStorage(pool *pgxpool.Pool, name string) *Storage {
 	return &Storage{
-		ReferenceStorage: ReferenceStorage{pool: pool},
-		ObjectStorage:    ObjectStorage{pool: pool},
+		ReferenceStorage: ReferenceStorage{name: name, pool: pool},
+		ObjectStorage:    ObjectStorage{name: name, pool: pool},
 	}
+}
+
+func (s Storage) WithName(name string) *Storage {
+	return NewStorage(s.ReferenceStorage.pool, name)
 }

@@ -28,12 +28,13 @@ import (
 )
 
 type ReferenceStorage struct {
+	name string
 	pool *pgxpool.Pool
 }
 
 // Reference loads a Git reference from storage.
 func (r *ReferenceStorage) Reference(name plumbing.ReferenceName) (*plumbing.Reference, error) {
-	rows, err := r.pool.Query(context.Background(), `SELECT type, hash, name, target FROM "source_refs" WHERE name = $1;`, strings.TrimSpace(name.String()))
+	rows, err := r.pool.Query(context.Background(), fmt.Sprintf(`SELECT type, hash, name, target FROM "%s_refs" WHERE name = $1;`, r.name), strings.TrimSpace(name.String()))
 
 	if err != nil {
 		return nil, &plumbing.UnexpectedError{
@@ -60,7 +61,7 @@ func (r *ReferenceStorage) Reference(name plumbing.ReferenceName) (*plumbing.Ref
 // IterReferences returns an iterator capable of walking through all available
 // Git references.
 func (r *ReferenceStorage) IterReferences() (storer.ReferenceIter, error) {
-	rows, err := r.pool.Query(context.Background(), `SELECT type, hash, name, target FROM "source_refs";`)
+	rows, err := r.pool.Query(context.Background(), fmt.Sprintf(`SELECT type, hash, name, target FROM "%s_refs";`, r.name))
 
 	if err != nil {
 		return nil, &plumbing.UnexpectedError{
@@ -78,7 +79,7 @@ func (r *ReferenceStorage) IterReferences() (storer.ReferenceIter, error) {
 func (r *ReferenceStorage) SetReference(ref *plumbing.Reference) error {
 	r.RemoveReference(ref.Name())
 
-	if _, err := r.pool.Exec(context.Background(), `INSERT INTO source_refs(type, hash, name, target) VALUES($1, $2, $3, $4);`, ref.Type(), ref.Hash(), ref.Name(), ref.Target()); err != nil {
+	if _, err := r.pool.Exec(context.Background(), fmt.Sprintf(`INSERT INTO %s_refs(type, hash, name, target) VALUES($1, $2, $3, $4);`, r.name), ref.Type(), ref.Hash(), ref.Name(), ref.Target()); err != nil {
 		return &plumbing.UnexpectedError{
 			Err: err,
 		}
@@ -89,7 +90,7 @@ func (r *ReferenceStorage) SetReference(ref *plumbing.Reference) error {
 
 // RemoveReference deletes a Git reference from storage by its unique name.
 func (r *ReferenceStorage) RemoveReference(name plumbing.ReferenceName) error {
-	if _, err := r.pool.Exec(context.Background(), `DELETE FROM "source_refs" WHERE name = $1;`, strings.TrimSpace(name.String())); err != nil {
+	if _, err := r.pool.Exec(context.Background(), fmt.Sprintf(`DELETE FROM "%s_refs" WHERE name = $1;`, r.name), strings.TrimSpace(name.String())); err != nil {
 		return &plumbing.UnexpectedError{
 			Err: err,
 		}
@@ -113,7 +114,7 @@ func (r *ReferenceStorage) CheckAndSetReference(new, old *plumbing.Reference) er
 }
 
 func (r *ReferenceStorage) CountLooseRefs() (int, error) {
-	query, err := r.pool.Query(context.Background(), `SELECT COUNT(*) FROM "source_refs";`)
+	query, err := r.pool.Query(context.Background(), fmt.Sprintf(`SELECT COUNT(*) FROM "%s_refs";`, r.name))
 
 	defer query.Close()
 	if err != nil {

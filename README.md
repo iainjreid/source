@@ -32,19 +32,25 @@ git clone https://github.com/iainjreid/source.git && cd source
 go mod download
 
 # Build
-go build -tags "standalone" ./cmd/src
+make src
 ```
 
 With the project built, and a Postgres instance standing by you should be
-able to start `src` without any further steps other than passing the connection URI as a runtime argument.
+able to setup `src` with a repository or your choosing.
+
+The instructions below will clone the projects own source code into the
+database, but you can change this by provide a URL or your choise.
+
+```sh
+./src manage --db "postgresql://postgres@localhost" --setup --clone https://github.com/iainjreid/source.git
+```
+
+With the database ready, you can start `src` and browse the repository in
+your browser. At http://localhost:8080/source
 
 ```sh
 ./src start --db "postgresql://postgres@localhost"
 ```
-
-On start-up, the program will clone its own sourcecode into the database,
-this will change in future updates when the web interface supports
-importing.
 
 ### Enabling SSH support
 

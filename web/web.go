@@ -24,7 +24,7 @@ import (
 
 	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
-	"github.com/go-git/go-git/v5/storage"
+	"github.com/iainjreid/source/db/postgres/storer"
 	"github.com/iainjreid/source/git"
 	"github.com/iainjreid/source/view"
 )
@@ -37,14 +37,7 @@ func cacheMiddleware() gin.HandlerFunc {
 	}
 }
 
-func NewServer(storage storage.Storer, port int) error {
-	repoUrl := "https://github.com/iainjreid/source.git"
-
-	repo := git.CloneRepo(storage, repoUrl)
-	if err := repo.Error(); err != nil {
-		panic(err)
-	}
-
+func NewServer(storage *storer.Storage, port int) error {
 	r := gin.Default()
 
 	r.Use(gzip.Gzip(gzip.DefaultCompression))
@@ -70,14 +63,24 @@ func NewServer(storage storage.Storer, port int) error {
 		},
 	})
 
-	r.GET("/blob/:hash", func(c *gin.Context) {
+	r.GET("/:repo/blob/:hash", func(c *gin.Context) {
+		repo := git.OpenRepo(storage, c.Param("repo"))
+		if err := repo.Error(); err != nil {
+			panic(err)
+		}
+
 		hash := c.Param("hash")
 
 		// db.GraphLookup(storage, hash)
 		renderFile(c, repo, hash, "/")
 	})
 
-	r.GET("/blob/:hash/*path", func(c *gin.Context) {
+	r.GET("/:repo/blob/:hash/*path", func(c *gin.Context) {
+		repo := git.OpenRepo(storage, c.Param("repo"))
+		if err := repo.Error(); err != nil {
+			panic(err)
+		}
+
 		hash := c.Param("hash")
 		path := c.Param("path")
 
@@ -85,7 +88,12 @@ func NewServer(storage storage.Storer, port int) error {
 		renderFile(c, repo, hash, path)
 	})
 
-	r.GET("/branches", func(c *gin.Context) {
+	r.GET("/:repo/branches", func(c *gin.Context) {
+		repo := git.OpenRepo(storage, c.Param("repo"))
+		if err := repo.Error(); err != nil {
+			panic(err)
+		}
+
 		branches, err := repo.GetBranches()
 
 		if err != nil {
@@ -113,10 +121,24 @@ func NewServer(storage storage.Storer, port int) error {
 	// })
 
 	r.GET("/", func(c *gin.Context) {
+		slog.Info("TODO")
+	})
+
+	r.GET("/:repo", func(c *gin.Context) {
+		repo := git.OpenRepo(storage, c.Param("repo"))
+		if err := repo.Error(); err != nil {
+			panic(err)
+		}
+
 		c.HTML(http.StatusOK, "index.tmpl", view.New(repo))
 	})
 
-	r.GET("/feedback", func(c *gin.Context) {
+	r.GET("/:repo/feedback", func(c *gin.Context) {
+		repo := git.OpenRepo(storage, c.Param("repo"))
+		if err := repo.Error(); err != nil {
+			panic(err)
+		}
+
 		c.HTML(http.StatusOK, "feedback.tmpl", view.New(repo))
 	})
 

@@ -16,10 +16,9 @@ package ssh
 
 import (
 	"context"
-	_ "embed"
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"net"
 
 	"github.com/anmitsu/go-shlex"
@@ -27,21 +26,27 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/protocol/packp"
 	"github.com/go-git/go-git/v5/plumbing/storer"
 	"github.com/go-git/go-git/v5/plumbing/transport"
+	pgstorer "github.com/iainjreid/source/db/postgres/storer"
+	"github.com/iainjreid/source/git"
 	"golang.org/x/crypto/ssh"
 )
 
 type IdentityLoader struct {
-	storer storer.Storer
+	storer *pgstorer.Storage
 }
 
-func NewIdentityLoader(storer storer.Storer) Loader {
+func NewIdentityLoader(storer *pgstorer.Storage) Loader {
 	return &IdentityLoader{
 		storer: storer,
 	}
 }
 
 func (i *IdentityLoader) Load(ep *transport.Endpoint) (storer.Storer, error) {
-	return i.storer, nil
+	name, err := git.GetRepoName(ep.Path)
+	if err != nil {
+		return nil, err
+	}
+	return i.storer.WithName(name), nil
 }
 
 type LoggedReadWriter struct {
@@ -76,7 +81,7 @@ func Init(pemString string) error {
 	return nil
 }
 
-func NewServer(storage storer.Storer, port int) error {
+func NewServer(storage *pgstorer.Storage, port int) error {
 	loader := NewIdentityLoader(storage)
 	svr := NewSSHServer(loader)
 
@@ -98,7 +103,7 @@ func NewServer(storage storer.Storer, port int) error {
 
 			sshConn, chanc, reqc, err := ssh.NewServerConn(conn, config)
 			if err != nil {
-				log.Println(err)
+				slog.Error("error whilst preparing connection", err)
 				return
 			}
 			defer sshConn.Close()
@@ -108,12 +113,12 @@ func NewServer(storage storer.Storer, port int) error {
 				case "session":
 					ch, reqc, err := chanr.Accept()
 					if err != nil {
-						log.Println(err)
+						slog.Error("error whilst accepting connection", err)
 						return
 					}
 					handleSSHSession(svr, ch, reqc)
 				default:
-					log.Printf("unhandled channel: %s", chanr.ChannelType())
+					slog.Warn("unhandled channel type", "type", chanr.ChannelType())
 				}
 			}
 		}(conn)
@@ -122,7 +127,7 @@ func NewServer(storage storer.Storer, port int) error {
 	return nil
 }
 
-func handleSSHSession(svr transport.Transport, ch ssh.Channel, reqc <-chan *ssh.Request) {
+func handleSSHSession(svr *server, ch ssh.Channel, reqc <-chan *ssh.Request) {
 	defer ch.Close()
 
 	var exitCode uint32
@@ -144,23 +149,29 @@ func handleSSHSession(svr transport.Transport, ch ssh.Channel, reqc <-chan *ssh.
 			ssh.Unmarshal(req.Payload, &payload)
 			args, err := shlex.Split(payload.Value, true)
 			if err != nil {
-				log.Println("lex args", err)
+				slog.Error("error whilst parsing lex args", err)
 				exitCode = 1
 				return
 			}
-			log.Printf("args: #%v", args)
 
 			cmd := args[0]
+
+			if len(args) == 1 {
+				slog.Debug("no name passed, exiting")
+				exitCode = 1
+				return
+			}
+
 			switch cmd {
 			case "git-upload-pack": // read
 				if gp := envs["GIT_PROTOCOL"]; gp != "version=2" {
-					log.Println("unhandled GIT_PROTOCOL", gp)
+					slog.Warn("unhandled GIT_PROTOCOL", gp)
 					exitCode = 1
 					return
 				}
-				err = handleUploadPack(svr, ch)
+				err = handleUploadPack(svr, ch, args[1])
 				if err != nil {
-					log.Println(err)
+					slog.Error("error whilst handling upload pack", err)
 					exitCode = 1
 					return
 				}
@@ -168,9 +179,9 @@ func handleSSHSession(svr transport.Transport, ch ssh.Channel, reqc <-chan *ssh.
 				req.Reply(true, nil)
 				return
 			case "git-receive-pack": // write
-				err = handleReceivePack(svr, ch)
+				err = handleReceivePack(svr, ch, args[1])
 				if err != nil {
-					log.Println(err)
+					slog.Error("error whilst handling upload pack", err)
 					exitCode = 1
 					return
 				}
@@ -178,7 +189,7 @@ func handleSSHSession(svr transport.Transport, ch ssh.Channel, reqc <-chan *ssh.
 				req.Reply(true, nil)
 				return
 			default:
-				log.Printf("unhandled cmd: %s", cmd)
+				slog.Warn("unhandled cmd", "cmd", cmd)
 				req.Reply(false, nil)
 				exitCode = 1
 				return
@@ -188,7 +199,7 @@ func handleSSHSession(svr transport.Transport, ch ssh.Channel, reqc <-chan *ssh.
 				req.Reply(true, nil)
 			}
 		default:
-			log.Printf("unhandled req type: %s", req.Type)
+			slog.Warn("unhandled req type", "type", req.Type)
 			req.Reply(false, nil)
 			exitCode = 1
 			return
@@ -196,12 +207,12 @@ func handleSSHSession(svr transport.Transport, ch ssh.Channel, reqc <-chan *ssh.
 	}
 }
 
-func handleReceivePack(svr transport.Transport, ch ssh.Channel) error {
+func handleReceivePack(svr transport.Transport, ch ssh.Channel, path string) error {
 	ctx := context.Background()
 
 	chwrap := LoggedReadWriter{internal: ch}
 
-	ep, err := transport.NewEndpoint("/")
+	ep, err := transport.NewEndpoint(path)
 	if err != nil {
 		return fmt.Errorf("create transport endpoint: %w", err)
 	}
@@ -243,12 +254,12 @@ func handleReceivePack(svr transport.Transport, ch ssh.Channel) error {
 	return nil
 }
 
-func handleUploadPack(svr transport.Transport, ch ssh.Channel) error {
+func handleUploadPack(svr transport.Transport, ch ssh.Channel, path string) error {
 	ctx := context.Background()
 
 	chwrap := LoggedReadWriter{internal: ch}
 
-	ep, err := transport.NewEndpoint("/")
+	ep, err := transport.NewEndpoint(path)
 	if err != nil {
 		return fmt.Errorf("create transport endpoint: %w", err)
 	}

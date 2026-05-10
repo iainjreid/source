@@ -16,14 +16,20 @@ package manage
 
 import (
 	"context"
+	"fmt"
+	"log/slog"
 
 	"github.com/iainjreid/source/cmd/src/internal/cli"
+	"github.com/iainjreid/source/db/postgres"
+	"github.com/iainjreid/source/db/postgres/storer"
+	"github.com/iainjreid/source/db/sql/shared"
+	"github.com/iainjreid/source/git"
 	"github.com/iainjreid/source/internal/logger"
 )
 
 var usage = `Usage:
     src manage [--db <uri>] [-q | --quiet] [-v | --verbose] [-j | --json]
-	           [-h | --help] <command> [<args>]
+               [-h | --help] [--setup] [--clone <uri>] [--debug]
 
 Options:
     --db <uri>                  Specify the database URI
@@ -31,16 +37,22 @@ Options:
     -v, --verbose               Print all logs
     -j, --json                  Display JSON output
     -h, --help                  Display this message
-    --debug                     Enable debugging
+
+Actions:
+    --setup                     Ensures that the database contains the required
+                                tables to operate. This flag can be used in
+                                conjunction with all other actions.
+
+    --clone <uri>               Specifies a remote repository to be cloned.
 
 Additional Options:
-    --setup                     Prepare the database 
+    --debug                     Enable debugging
 
 Example:
     $ src manage --db postgresql://postgres@localhost --setup
 `
 
-func Cmd(_ context.Context, args []string) {
+func Cmd(ctx context.Context, args []string) {
 	cmd := cli.New("src manage")
 
 	if len(args) == 0 {
@@ -54,6 +66,8 @@ func Cmd(_ context.Context, args []string) {
 		json    = cmd.Bool(false, "json", "j")
 		help    = cmd.Bool(false, "help", "h")
 		debug   = cmd.Bool(false, "debug", "")
+		setup   = cmd.Bool(false, "setup", "")
+		clone   = cmd.String("", "clone", "c")
 	)
 
 	cmd.Parse(args)
@@ -72,5 +86,32 @@ func Cmd(_ context.Context, args []string) {
 		cmd.ExplainUsage("--db is required")
 	}
 
-	cli.Fatal(1, "Not yet implemented...")
+	pg, err := postgres.Connect(ctx, *db)
+
+	if err != nil {
+		cli.Fatal(cli.Failure, err.Error())
+	}
+
+	if *setup {
+		pg.EnsureReady(ctx)
+	}
+
+	if *clone != "" {
+		name, err := git.GetRepoName(*clone)
+		if err != nil {
+			panic(err)
+		}
+
+		slog.InfoContext(ctx, "creating postgres tables")
+		if _, err := pg.Pool.Exec(ctx, fmt.Sprintf(shared.CreateRepoQuery, name, name)); err != nil {
+			cli.Error("error whilst ensuring tables exist " + err.Error())
+		}
+
+		storage := storer.NewStorage(pg.Pool, name)
+
+		repo := git.CloneRepo(storage, *clone)
+		if err := repo.Error(); err != nil {
+			cli.Fatal(cli.Failure, err.Error())
+		}
+	}
 }

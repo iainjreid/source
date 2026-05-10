@@ -6,7 +6,7 @@
         <summary class="bg-[--base00] pl-2 py-1">Branch</summary>
         <div class="absolute bg-white">
           {{ range .Branches }}
-          <a class="hover:bg-slate-100 py-1 pl-2 w-full block grow" href="/blob/{{ .Hash }}">{{ .Name }}</a>
+          <a class="hover:bg-slate-100 py-1 pl-2 w-full block grow" href="/{{.RepoName}}/blob/{{ .Hash }}">{{ .Name }}</a>
           {{ end }}
         </div>
       </details>
