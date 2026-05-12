@@ -8,3 +8,5 @@
   concerns set to `majority` and read conerns set to `linearizable` should
   achieve a strongly consistent database that would suit this application.
 
+* [ ] Add support for webhooks, to enable CI/CD and other workflows.
+
