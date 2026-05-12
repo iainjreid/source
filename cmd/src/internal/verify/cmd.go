@@ -23,7 +23,7 @@ import (
 
 var usage = `Usage:
     src verify [--db <uri>] [-q | --quiet] [-v | --verbose] [-j | --json]
-	           [-h | --help] [--debug]
+               [-h | --help] [--debug]
 
 Before running a server, you can verify that the target database has been
 initalised and is ready to accept connections from src without running into
@@ -35,7 +35,7 @@ it can also be used as a readiness check before starting the server itself.
 Options:
     --db <uri>                  Specify the database URI
     -q, --quiet                 Suppress all non-error logs
-    -v, --verbose				Print all logs
+    -v, --verbose               Print all logs
     -j, --json                  Display JSON output
     -h, --help                  Display this message
 

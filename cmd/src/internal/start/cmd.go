@@ -31,8 +31,8 @@ import (
 
 var usage = `Usage: 
     src start [--db <uri>] [-q | --quiet] [-v | --verbose] [-j | --json]
-	          [-h | --help] [-i | --ssh-id-path <path>] [-I | --ssh-id <string>]
-			  [--ssh-port <number>] [--http-port <number>] [--debug]
+              [-h | --help] [-i | --ssh-id-path <path>] [-I | --ssh-id <string>]
+              [--ssh-port <number>] [--http-port <number>] [--debug]
 
 Start a Source instance against the specifed database.
 
