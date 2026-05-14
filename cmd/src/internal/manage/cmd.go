@@ -46,8 +46,8 @@ Actions:
     --setup                     Ensures that the database contains the required
                                 tables to operate. This flag can be used in
                                 conjunction with all other actions.
-
-    --clone <uri>               Specifies a remote repository to be cloned.
+    -c, --clone <uri>           Specifies a repository to be cloned. This flag
+                                can be passed multiple times.
 
 Additional Options:
     --debug                     Enable debugging
@@ -71,7 +71,7 @@ func Cmd(ctx context.Context, args []string) {
 		help    = cmd.Bool(false, "help", "h")
 		debug   = cmd.Bool(false, "debug", "")
 		setup   = cmd.Bool(false, "setup", "")
-		clone   = cmd.String("", "clone", "c")
+		clone   = cmd.StringSlice("clone", "c")
 	)
 
 	cmd.Parse(args)
@@ -100,8 +100,8 @@ func Cmd(ctx context.Context, args []string) {
 		pg.EnsureReady(ctx)
 	}
 
-	if *clone != "" {
-		name, err := git.GetRepoName(*clone)
+	for _, uri := range *clone {
+		name, err := git.GetRepoName(uri)
 		if err != nil {
 			panic(err)
 		}
@@ -113,7 +113,7 @@ func Cmd(ctx context.Context, args []string) {
 
 		storage := storer.NewStorage(pg.Pool, name)
 
-		repo := git.CloneRepo(storage, *clone)
+		repo := git.CloneRepo(storage, uri)
 		if err := repo.Error(); err != nil {
 			cli.Fatal(cli.Failure, err.Error())
 		}

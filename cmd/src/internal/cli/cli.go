@@ -92,6 +92,15 @@ func (c *Cmd) Bool(value bool, long, short string) *bool {
 	return out
 }
 
+func (c *Cmd) StringSlice(long, short string) *StringSlice {
+	out := new(StringSlice)
+	c.Var(out, long, "")
+	if short != "" {
+		c.Var(out, short, "")
+	}
+	return out
+}
+
 var (
 	Success  = 0
 	Failure  = 1
