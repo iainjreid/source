@@ -39,7 +39,7 @@ With the project built, and a Postgres instance standing by you should be
 able to setup `src` with a repository or your choosing.
 
 The instructions below will clone the projects own source code into the
-database, but you can change this by provide a URL or your choise.
+database, but you can change this by provide a URL or your choice.
 
 ```sh
 ./src manage --db "postgresql://postgres@localhost" --setup --clone https://github.com/iainjreid/source.git
