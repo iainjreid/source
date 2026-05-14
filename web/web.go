@@ -130,7 +130,7 @@ func NewServer(storage *storer.Storage, port int) error {
 			panic(err)
 		}
 
-		c.HTML(http.StatusOK, "index.tmpl", view.New(repo))
+		c.HTML(http.StatusOK, "repo.tmpl", view.New(repo))
 	})
 
 	r.GET("/:repo/feedback", func(c *gin.Context) {
