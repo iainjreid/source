@@ -28,6 +28,7 @@ import (
 )
 
 type View struct {
+	PageName     string
 	Branches     []git.Branch
 	Nav          nav.Nav
 	TreeEntryMap *git.TreeEntryMap
@@ -47,6 +48,7 @@ func New(repo *git.Repo) *View {
 	}
 
 	return &View{
+		PageName: repo.Name,
 		Branches: branches,
 		Nav: nav.Nav{
 			Items: []*nav.NavItem{

@@ -128,6 +128,11 @@ func (t *TreeEntryMap) SetDepth(treeEntry *TreeEntry, depth int) {
 		dirEntry.Depth = depth + 1
 		t.SetDepth(dirEntry, depth+1)
 	}
+
+	for _, fileEntry := range treeEntry.ChildEntries.FileEntries {
+		fileEntry.Depth = depth + 1
+		t.SetDepth(fileEntry, depth+1)
+	}
 }
 
 func (t *TreeEntryMap) InitHierarchy(rootPath string) error {

@@ -20,6 +20,11 @@ import (
 	"context"
 )
 
+type Repo struct {
+	Name        string
+	Description string
+}
+
 // Type is an interface representing the expected shape of a database
 // abstraction layer.
 type DB interface {
@@ -30,4 +35,8 @@ type DB interface {
 	// tables, indexes, and other functionality required for a given database to
 	// accept writes.
 	EnsureReady(context.Context) error
+
+	// ListRepos should return a slice of the available repositories stored with
+	// the database.
+	ListRepos(context.Context) ([]Repo, error)
 }

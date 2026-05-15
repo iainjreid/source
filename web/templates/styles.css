@@ -1,41 +1,20 @@
-@import "./palettes/catppuccin.css";
+@import "./palettes/default.css";
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-/* @font-face {
+@font-face {
   font-family: CommitMono;
   font-style: normal;
   font-weight: 100 900;
   font-display: swap;
-  src: url('/static/commit-mono.woff2') format('woff2');
-} */
+  src: url("/static/commit-mono.woff2") format("woff2");
+}
 
 html, body {
-  font-size: 14px;
+  @apply antialiased font-mono text-sm font-medium bg-white text-zinc-800 dark:bg-zinc-900 dark:text-zinc-100;
   overflow: overlay;
 }
 
-summary {
-  cursor: pointer;
-  display: flex;
-  justify-content: space-between;
-  list-style: none;
-}
-
-summary::after {
-  content: '↓';
-
-  @apply px-2;
-}
-
-details[open] > summary::after {
-  transform: rotate(-180deg);
-}
-
-summary::-webkit-details-marker {
-  display: none;
+.highlight {
+  @apply cursor-pointer border-zinc-300 hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800;
 }
 
 /* PreWrapper */
@@ -43,20 +22,7 @@ summary::-webkit-details-marker {
   font-size: 12px;
 
   @apply min-h-full;
-  @apply py-2;
-  @apply px-1;
-}
-
-/* Background */
-.bg {
-  color: var(--base05);
-  background-color: var(--base00);
-}
-
-/* PreWrapper */
-.chroma {
-  color: var(--base05);
-  background-color: var(--base00);
+  @apply py-3;
 }
 
 /* Error */
@@ -89,27 +55,29 @@ summary::-webkit-details-marker {
 
 /* LineHighlight */
 .chroma .hl {
-  background-color: var(--base02);
+  background-color: var(--base01);
 }
 
 /* LineNumbersTable */
 .chroma .lnt {
+  @apply ml-3;
   white-space: pre;
   -webkit-user-select: none;
   user-select: none;
   margin-right: 0.4em;
   padding: 0 0.4em 0 0.4em;
-  color: var(--base05);
+  color: var(--base03);
 }
 
 /* LineNumbers */
 .chroma .ln {
+  @apply ml-3;
   white-space: pre;
   -webkit-user-select: none;
   user-select: none;
   margin-right: 0.4em;
   padding: 0 0.4em 0 0.4em;
-  color: var(--base05);
+  color: var(--base03);
 }
 
 /* Line */
@@ -407,7 +375,67 @@ summary::-webkit-details-marker {
   text-decoration: underline
 }
 
-body {
-  color: var(--base05);
-  background-color: var(--base00);
+summary::-webkit-details-marker {
+  display: none;
+}
+
+.icon {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.icon::before {
+  content: "";
+  width: 1.2em;
+  height: 1.2em;
+  flex-shrink: 0;
+  opacity: 0.55;
+  background-color: currentColor;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+}
+
+.icon.chevron::before {
+  -webkit-mask-image: url("/static/icons/chevron.svg");
+  mask-image: url("/static/icons/chevron.svg");
+}
+
+.icon.file::before {
+  -webkit-mask-image: url("/static/icons/file.svg");
+  mask-image: url("/static/icons/file.svg");
+}
+
+.icon.folder-closed::before {
+  -webkit-mask-image: url("/static/icons/folder-closed.svg");
+  mask-image: url("/static/icons/folder-closed.svg");
+}
+
+.icon.folder-open::before {
+  -webkit-mask-image: url("/static/icons/folder-open.svg");
+  mask-image: url("/static/icons/folder-open.svg");
+}
+
+.icon.git-branch::before {
+  -webkit-mask-image: url("/static/icons/git-branch.svg");
+  mask-image: url("/static/icons/git-branch.svg");
+}
+
+.icon.logo::before {
+  -webkit-mask-image: url("/static/icons/logo.svg");
+  mask-image: url("/static/icons/logo.svg");
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  *, ::before, ::after {
+    @apply border-[var(--base03)];
+  }
 }

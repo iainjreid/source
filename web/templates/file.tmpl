@@ -1,27 +1,37 @@
 {{ template "partials/base-start.tmpl" . }}
-<div class="h-full border-t grid grid-cols-12">
-  <div class="overflow-y-auto col-span-2">
-    <div class="grid auto-rows-min border-r text-sm">
-      <details class="sticky top-0 border-b" style="z-index: 100;">
-        <summary class="bg-[--base00] pl-2 py-1">Branch</summary>
-        <div class="absolute bg-white">
-          {{ range .Branches }}
-          <a class="hover:bg-slate-100 py-1 pl-2 w-full block grow" href="/{{.RepoName}}/blob/{{ .Hash }}">{{ .Name }}</a>
-          {{ end }}
-        </div>
-      </details>
-      <nav>
-        {{ template "partials/tree.tmpl" .TreeEntryMap.Root }}
-      </nav>
-    </div>
-  </div>
+<div class="pl-4 sm:pl-6 lg:pl-8">
+  <div class="h-full grid grid-cols-[min-content_auto]">
+    <div class="pt-4 overflow-hidden flex flex-col">
+      <div class="branch">
+        <details class="sticky top-0 mb-1 mr-4 group relative z-50">
+          <summary class="flex highlight items-center justify-between rounded-lg border border-zinc-300  px-4 py-2 text-sm font-medium text-zinc-800 shadow-sm transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800">
+            <span class="icon git-branch"></span>
+            <span class="flex-1 text-left ml-2">Branch</span>
+            <span class="icon chevron h-4 w-4 transition-transform group-open:rotate-180"></span>
+          </summary>
 
-  <div class="overflow-y-auto col-span-10">
-    {{ if .Contents }}
-    {{ htmlSafe .Contents }}
-    {{ else }}
-    Select a file
-    {{ end }}
+          <div class="absolute right-0 mt-2 w-full overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-900">
+            {{ range .Branches }}
+            <a class="block px-4 py-2 text-sm text-zinc-700 hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-zinc-800" href="/{{.RepoName}}/blob/{{ .Hash }}">{{ .Name }}</a>
+            {{ end }}
+          </div>
+        </details>
+      </div>
+
+      <div style="scrollbar-gutter: stable;" class="grid auto-rows-min overflow-y-auto">
+        <nav>
+          {{ template "partials/tree.tmpl" .TreeEntryMap.Root }}
+        </nav>
+      </div>
+    </div>
+
+    <div class="border-l overflow-y-auto">
+      {{ if .Contents }}
+      {{ htmlSafe .Contents }}
+      {{ else }}
+      Select a file
+      {{ end }}
+    </div>
   </div>
 </div>
 <script>

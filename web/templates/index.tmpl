@@ -1,0 +1,18 @@
+{{ template "partials/base-start.tmpl" . }}
+<main class="pl-4 sm:pl-6 lg:pl-8">
+<div class="grid gap-4 max-w-80">
+  <h4 class="text-3xl font-bold underline">Repositories</h4>
+
+  <div class="grid border-t">
+    {{range .Repos}}
+    <div class="border-b border-x">
+      <a href="/{{.Name}}">
+        <p>{{.Name}}</p>
+        <p>{{.Description}}</p>
+      </a>
+    </div>
+    {{end}}
+  </div>
+  </div>
+</main>
+{{ template "partials/base-stop.tmpl" . }}

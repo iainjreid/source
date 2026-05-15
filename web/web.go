@@ -24,10 +24,21 @@ import (
 
 	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
+	"github.com/iainjreid/source/db"
 	"github.com/iainjreid/source/db/postgres/storer"
 	"github.com/iainjreid/source/git"
 	"github.com/iainjreid/source/view"
 )
+
+type Index struct {
+	PageName string
+	Repos    []db.Repo
+}
+
+type Error struct {
+	PageName string
+	Error    string
+}
 
 // Does this achieve anything? Requests for specific blobs should
 // be cached client side. Set an ETag?
@@ -37,7 +48,7 @@ func cacheMiddleware() gin.HandlerFunc {
 	}
 }
 
-func NewServer(storage *storer.Storage, port int) error {
+func NewServer(db db.DB, storage *storer.Storage, port int) error {
 	r := gin.Default()
 
 	r.Use(gzip.Gzip(gzip.DefaultCompression))
@@ -49,14 +60,8 @@ func NewServer(storage *storer.Storage, port int) error {
 	r.SetTrustedProxies(nil)
 
 	loadTemplates(r, template.FuncMap{
-		"add": func(i1, i2 int) int {
-			return i1 + i2
-		},
-		"sub": func(i1, i2 int) int {
-			return i1 - i2
-		},
-		"mul": func(i1, i2 int) int {
-			return i1 * i2
+		"treeDepthToOffset": func(depth int) int {
+			return (depth-1)*2 + 1
 		},
 		"htmlSafe": func(html string) template.HTML {
 			return template.HTML(html)
@@ -121,7 +126,23 @@ func NewServer(storage *storer.Storage, port int) error {
 	// })
 
 	r.GET("/", func(c *gin.Context) {
-		slog.Info("TODO")
+		repos, err := db.ListRepos(c)
+		if err != nil {
+			c.HTML(http.StatusInternalServerError, "error.tmpl", Error{
+				PageName: "Error",
+				Error:    err.Error(),
+			})
+			return
+		}
+
+		c.HTML(http.StatusOK, "index.tmpl", Index{
+			PageName: "Home",
+			Repos:    repos,
+		})
+	})
+
+	r.GET("/favicon.ico", func(c *gin.Context) {
+		c.JSON(404, gin.H{"message": "Not found"})
 	})
 
 	r.GET("/:repo", func(c *gin.Context) {
@@ -133,13 +154,8 @@ func NewServer(storage *storer.Storage, port int) error {
 		c.HTML(http.StatusOK, "repo.tmpl", view.New(repo))
 	})
 
-	r.GET("/:repo/feedback", func(c *gin.Context) {
-		repo := git.OpenRepo(storage, c.Param("repo"))
-		if err := repo.Error(); err != nil {
-			panic(err)
-		}
-
-		c.HTML(http.StatusOK, "feedback.tmpl", view.New(repo))
+	r.NoRoute(func(c *gin.Context) {
+		c.JSON(404, gin.H{"message": "Not found"})
 	})
 
 	return r.Run(fmt.Sprintf(":%d", port))

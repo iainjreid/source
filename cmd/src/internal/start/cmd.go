@@ -121,7 +121,7 @@ func Cmd(ctx context.Context, args []string) {
 	storage := storer.NewStorage(pg.Pool, "")
 	wg.Go(func() error {
 		slog.Info("Starting Web server")
-		return web.NewServer(storage, *httpPort)
+		return web.NewServer(pg, storage, *httpPort)
 	})
 
 	if *sshId != "" {

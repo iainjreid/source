@@ -1,0 +1,43 @@
+/* Color scheme modified from Gruvbox with grayscale overrides */
+
+:root {
+    --base00: #ffffff;
+    --base01: #e2e2e2;
+    --base02: #c8c8c8;
+    --base03: #a8a8a8;
+    --base04: #6a645e;
+    --base05: #534f4c;
+    --base06: #403d3b;
+    --base07: #2b2a29;
+
+    --base08: #9d0006;
+    --base09: #af3a03;
+    --base0A: #b57614;
+    --base0B: #79740e;
+    --base0C: #427b58;
+    --base0D: #076678;
+    --base0E: #8f3f71;
+    --base0F: #d65d0e;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --base00: #282828;
+        --base01: #35312f;
+        --base02: #45403d;
+        --base03: #5f5853;
+        --base04: #b8a98a;
+        --base05: #d8c9a7;
+        --base06: #f0dfb8;
+        --base07: #fff8dc;
+
+        --base08: #fb4934;
+        --base09: #fe8019;
+        --base0A: #fabd2f;
+        --base0B: #b8bb26;
+        --base0C: #8ec07c;
+        --base0D: #83a598;
+        --base0E: #d3869b;
+        --base0F: #d65d0e;
+    }
+}

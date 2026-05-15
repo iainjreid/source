@@ -61,3 +61,25 @@ func (p *Postgres) EnsureReady(ctx context.Context) error {
 
 	return nil
 }
+
+func (p *Postgres) ListRepos(ctx context.Context) ([]db.Repo, error) {
+	rows, err := p.Pool.Query(ctx, `SELECT repo_name, repo_desc FROM internal_repos;`)
+	defer rows.Close()
+
+	if err != nil {
+		return nil, fmt.Errorf("error whilst ensuring tables exist: %w", err)
+	}
+
+	var repos []db.Repo
+	var repo db.Repo
+
+	for rows.Next() {
+		err := rows.Scan(&repo.Name, &repo.Description)
+		if err != nil {
+			return nil, err
+		}
+		repos = append(repos, repo)
+	}
+
+	return repos, nil
+}

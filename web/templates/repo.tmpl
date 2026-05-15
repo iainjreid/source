@@ -1,26 +1,9 @@
-<html class="h-full antialiased light">
-  <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+{{ template "partials/base-start.tmpl" . }}
+<div class="pl-4 sm:pl-6 lg:pl-8">
+  <h1 class="text-3xl font-bold underline">Select a branch to view</h1>
 
-    <title>Source</title>
-
-    <link href="/static/main.css" rel="stylesheet">
-  </head>
-
-  <body class="h-full">
-    <div class="w-full">
-      <header class="pointer-events-none relative z-50 flex flex-none flex-col w-full">
-        <div class="top-0 z-10 h-16 pt-6 w-full">
-          {{ template "partials/nav.tmpl" .Nav }}
-        </div>
-      </header>
-
-      <h1 class="text-3xl font-bold underline">Branches</h1>
-
-      {{range .Branches}}
-      <p>{{.Name}}: <a href="/{{.RepoName}}/blob/{{.Hash}}">{{.Hash}}</a></p>
-      {{end}}
-    </div>
-  </body>
-</html>
+  {{range .Branches}}
+  <p>{{.Name}}: <a href="/{{.RepoName}}/blob/{{.Hash}}">{{.Hash}}</a></p>
+  {{end}}
+</div>
+{{ template "partials/base-stop.tmpl" . }}
