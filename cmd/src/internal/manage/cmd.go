@@ -40,8 +40,7 @@ Options:
 
 Actions:
     --setup                     Ensures that the database contains the required
-                                tables to operate. This flag can be used in
-                                conjunction with all other actions.
+                                tables to operate.
     -c, --clone <uri>           Specifies a repository to be cloned. This flag
                                 can be passed multiple times.
 
