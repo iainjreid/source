@@ -1,5 +1,0 @@
-CREATE TABLE IF NOT EXISTS internal_repos (
-  repo_id   BIGINT GENERATED ALWAYS AS IDENTITY,
-  repo_name VARCHAR NOT NULL,
-  repo_desc VARCHAR NOT NULL
-);

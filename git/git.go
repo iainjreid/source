@@ -26,7 +26,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/storer"
-	pgstorer "github.com/iainjreid/source/db/postgres/storer"
+	"github.com/iainjreid/source/storage"
 )
 
 type Repo struct {
@@ -35,7 +35,7 @@ type Repo struct {
 	err  error
 }
 
-func CloneRepo(store *pgstorer.Storage, url string) *Repo {
+func CloneRepo(store storage.Repo, url string) *Repo {
 	slog.Info("cloning repo", "url", url)
 
 	name, err := GetRepoName(url)
@@ -43,7 +43,7 @@ func CloneRepo(store *pgstorer.Storage, url string) *Repo {
 		panic(err)
 	}
 
-	repo, err := git.Clone(store.WithName(name), nil, &git.CloneOptions{
+	repo, err := git.Clone(store, nil, &git.CloneOptions{
 		URL:          url,
 		Progress:     io.Discard,
 		Mirror:       true,
@@ -62,12 +62,12 @@ func CloneRepo(store *pgstorer.Storage, url string) *Repo {
 	}
 }
 
-func OpenRepo(store *pgstorer.Storage, name string) *Repo {
-	repo, err := git.Open(store.WithName(name), nil)
+func OpenRepo(repo storage.Repo) *Repo {
+	gitrepo, err := git.Open(repo, nil)
 
 	return &Repo{
-		Name: name,
-		repo: repo,
+		Name: repo.Name(),
+		repo: gitrepo,
 		err:  err,
 	}
 }

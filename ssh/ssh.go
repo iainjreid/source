@@ -25,16 +25,16 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/protocol/packp"
 	"github.com/go-git/go-git/v5/plumbing/storer"
 	"github.com/go-git/go-git/v5/plumbing/transport"
-	pgstorer "github.com/iainjreid/source/db/postgres/storer"
 	"github.com/iainjreid/source/git"
+	"github.com/iainjreid/source/storage"
 	"golang.org/x/crypto/ssh"
 )
 
 type IdentityLoader struct {
-	storer *pgstorer.Storage
+	storer storage.Storage
 }
 
-func NewIdentityLoader(storer *pgstorer.Storage) Loader {
+func NewIdentityLoader(storer storage.Storage) Loader {
 	return &IdentityLoader{
 		storer: storer,
 	}
@@ -45,6 +45,17 @@ func (i *IdentityLoader) Load(ep *transport.Endpoint) (storer.Storer, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	repo := i.storer.Repo(name)
+	exists, err := repo.Exists()
+	if err != nil {
+		return nil, err
+	}
+
+	if !exists {
+		return nil, transport.ErrRepositoryNotFound
+	}
+
 	return repo, nil
 }
 
@@ -64,7 +75,7 @@ func Init(pemString string) error {
 	return nil
 }
 
-func NewServer(storage *pgstorer.Storage, port int) error {
+func NewServer(storage storage.Storage, port int) error {
 	loader := NewIdentityLoader(storage)
 	svr := NewSSHServer(loader)
 

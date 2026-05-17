@@ -16,15 +16,11 @@ package manage
 
 import (
 	"context"
-	"fmt"
-	"log/slog"
 
 	"github.com/iainjreid/source/cmd/src/internal/cli"
-	"github.com/iainjreid/source/db/postgres"
-	"github.com/iainjreid/source/db/postgres/storer"
-	"github.com/iainjreid/source/db/sql/shared"
 	"github.com/iainjreid/source/git"
 	"github.com/iainjreid/source/internal/logger"
+	"github.com/iainjreid/source/plugins/storage/postgresql"
 )
 
 var usage = `Usage:
@@ -90,32 +86,28 @@ func Cmd(ctx context.Context, args []string) {
 		cmd.ExplainUsage("--db is required")
 	}
 
-	pg, err := postgres.Connect(ctx, *db)
+	storage, err := postgresql.Init(ctx, *db)
 
 	if err != nil {
 		cli.Fatal(cli.Failure, err.Error())
 	}
 
 	if *setup {
-		pg.EnsureReady(ctx)
+		err := storage.EnsureReady(ctx)
+		if err != nil {
+			cli.Fatal(cli.Failure, err.Error())
+		}
 	}
 
 	for _, uri := range *clone {
 		name, err := git.GetRepoName(uri)
 		if err != nil {
-			panic(err)
-		}
-
-		slog.InfoContext(ctx, "creating postgres tables")
-		if _, err := pg.Pool.Exec(ctx, fmt.Sprintf(shared.CreateRepoQuery, name, name)); err != nil {
-			cli.Error("error whilst ensuring tables exist " + err.Error())
-		}
-
-		storage := storer.NewStorage(pg.Pool, name)
-
-		repo := git.CloneRepo(storage, uri)
-		if err := repo.Error(); err != nil {
 			cli.Fatal(cli.Failure, err.Error())
+		}
+
+		repo := git.CloneRepo(storage.Repo(name), uri)
+		if err := repo.Error(); err != nil {
+			cli.Fatalf(cli.Failure, "Error whilst cloning repository: %v", err)
 		}
 	}
 }

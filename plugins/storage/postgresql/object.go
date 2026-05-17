@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package storer
+package postgresql
 
 import (
 	"context"
@@ -23,15 +23,15 @@ import (
 
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/storer"
-	"github.com/iainjreid/source/db/sql/shared"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"golang.org/x/sync/errgroup"
 )
 
 type ObjectStorage struct {
-	name   string
-	pool   *pgxpool.Pool
+	Name   string
+	ID     string
+	Pool   *pgxpool.Pool
 	buffer map[string]plumbing.EncodedObject
 }
 
@@ -50,7 +50,15 @@ func (o *ObjectStorage) EncodedObject(objType plumbing.ObjectType, objHash plumb
 		}
 	}
 
-	rows, err := o.pool.Query(context.Background(), fmt.Sprintf(`SELECT type, cont FROM "%s_objects" WHERE hash = $1;`, o.name), objHash.String())
+	rows, err := o.Pool.Query(context.Background(), `
+		SELECT
+			objects.type,
+			objects.contents
+		FROM objects
+		JOIN repos
+			ON objects.repo_id = repos.id
+		WHERE repos.name = $1
+			AND objects.hash = $2;`, o.Name, objHash.String())
 
 	if err != nil {
 		return nil, &plumbing.UnexpectedError{
@@ -83,7 +91,15 @@ func (o *ObjectStorage) EncodedObject(objType plumbing.ObjectType, objHash plumb
 // IterEncodedObjects returns an iterator that traverses all of the available
 // objects of the specified type.
 func (o *ObjectStorage) IterEncodedObjects(objType plumbing.ObjectType) (storer.EncodedObjectIter, error) {
-	rows, err := o.pool.Query(context.Background(), fmt.Sprintf(`SELECT type, cont FROM "%s_objects" WHERE type = $1;`, o.name), objType)
+	rows, err := o.Pool.Query(context.Background(), `
+		SELECT
+			objects.type,
+			objects.contents
+		FROM objects
+		JOIN repos
+			ON objects.repo_id = repos.id
+		WHERE repos.name = $1
+			AND objects.type = $2;`, o.Name, objType)
 
 	if err != nil {
 		return nil, &plumbing.UnexpectedError{
@@ -91,7 +107,7 @@ func (o *ObjectStorage) IterEncodedObjects(objType plumbing.ObjectType) (storer.
 		}
 	}
 
-	return shared.NewIterator(rows.Next, rows.Close, func() (plumbing.EncodedObject, error) {
+	return NewIterator(rows.Next, rows.Close, func() (plumbing.EncodedObject, error) {
 		return scanMemoryObject(rows)
 	})
 }
@@ -105,7 +121,14 @@ func (o *ObjectStorage) EncodedObjectSize(hash plumbing.Hash) (int64, error) {
 		}
 	}
 
-	rows, err := o.pool.Query(context.Background(), fmt.Sprintf(`SELECT length FROM "%s_objects" WHERE hash = $1;`, o.name), hash)
+	rows, err := o.Pool.Query(context.Background(), `
+		SELECT
+			length
+		FROM objects
+		JOIN repos
+			ON objects.repo_id = repos.id
+		WHERE repos.name = $1
+			AND objects.hash = $2;`, o.Name, hash)
 
 	if err != nil {
 		return 0, &plumbing.UnexpectedError{
@@ -132,7 +155,14 @@ func (o *ObjectStorage) HasEncodedObject(hash plumbing.Hash) error {
 		}
 	}
 
-	rows, err := o.pool.Query(context.Background(), fmt.Sprintf(`SELECT hash FROM "%s_objects" WHERE hash = '$1';`, o.name), hash)
+	rows, err := o.Pool.Query(context.Background(), `
+		SELECT
+			objects.hash
+		FROM objects
+		JOIN repos
+			ON objects.repo_id = repos.id
+		WHERE repos.name = $1
+			AND objects.hash = $2;`, o.Name, hash)
 
 	if err != nil {
 		return &plumbing.UnexpectedError{
@@ -171,7 +201,21 @@ func (o *ObjectStorage) SetEncodedObject(obj plumbing.EncodedObject) (plumbing.H
 	//
 	// Similar to the above, if an error occurs we will return a ZeroHash along
 	// with the error returned by the database driver.
-	if _, err := o.pool.Exec(context.Background(), fmt.Sprintf(`INSERT INTO %s_objects(type, hash, cont, length) VALUES($1, $2, $3, $4);`, o.name), obj.Type(), obj.Hash(), cont, obj.Size()); err != nil {
+	query := `
+		INSERT INTO objects (
+			repo_id,
+			type,
+			hash,
+			contents,
+			length
+		)
+		SELECT
+			repos.id,
+			$2, $3, $4, $5
+		FROM repos
+		WHERE repos.name = $1;
+	`
+	if _, err := o.Pool.Exec(context.Background(), query, o.Name, obj.Type(), obj.Hash(), cont, obj.Size()); err != nil {
 		return plumbing.ZeroHash, &plumbing.UnexpectedError{
 			Err: err,
 		}
@@ -248,8 +292,10 @@ func (o *ObjectStorage) Commit() error {
 }
 
 type BufferWriter struct {
-	buf []plumbing.EncodedObject
-	pos int
+	repoId string
+	buf    []plumbing.EncodedObject
+	pos    int
+	err    error
 }
 
 func (b *BufferWriter) Next() bool {
@@ -257,18 +303,23 @@ func (b *BufferWriter) Next() bool {
 	return b.pos <= len(b.buf)
 }
 
+var keyMap = map[string]bool{}
+
 func (b *BufferWriter) Values() ([]any, error) {
 	obj := b.buf[b.pos-1]
 
 	cont := make([]byte, obj.Size())
-	reader, _ := obj.Reader()
+	reader, err := obj.Reader()
+	if err != nil {
+		b.err = err
+	}
 	reader.Read(cont)
 
-	return []any{obj.Type(), obj.Hash(), "missing", cont, obj.Size()}, nil
+	return []any{b.repoId, obj.Type(), obj.Hash(), cont, obj.Size()}, nil
 }
 
 func (b *BufferWriter) Err() error {
-	return nil
+	return b.err
 }
 
 func (o *ObjectStorage) CommitCopy() error {
@@ -276,10 +327,8 @@ func (o *ObjectStorage) CommitCopy() error {
 	slog.DebugContext(ctx, "commiting object storage", "count", len(o.buffer))
 
 	// Get a Tx for making transaction requests.
-	conn, err := o.pool.Acquire(ctx)
+	conn, err := o.Pool.Acquire(ctx)
 	defer func() {
-		// Defer a rollback in case anything fails.
-		// conn.Exec(ctx, `DROP TABLE buffer`)
 		conn.Release()
 	}()
 
@@ -314,7 +363,7 @@ func (o *ObjectStorage) CommitCopy() error {
 		chunk := writes[i : i+end : i+end]
 
 		wg.Go(func() error {
-			chunkConn, err := o.pool.Acquire(ctx)
+			chunkConn, err := o.Pool.Acquire(ctx)
 			logger.DebugContext(ctx, "acquired connection")
 
 			defer chunkConn.Release()
@@ -324,12 +373,13 @@ func (o *ObjectStorage) CommitCopy() error {
 
 			logger.DebugContext(ctx, "copying  chunk")
 			source := &BufferWriter{
-				buf: chunk,
+				repoId: o.ID,
+				buf:    chunk,
 			}
 
-			count, err := chunkConn.CopyFrom(ctx, pgx.Identifier{o.name + "_objects"}, []string{"type", "hash", "parent_hash", "cont", "length"}, source)
+			count, err := chunkConn.CopyFrom(ctx, pgx.Identifier{"objects"}, []string{"repo_id", "type", "hash", "contents", "length"}, source)
 			if err != nil {
-				return err
+				return fmt.Errorf("chunk failed to be written: %w", err)
 			}
 			logger.DebugContext(ctx, "successfully copied chunk", "written", count)
 

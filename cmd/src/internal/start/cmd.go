@@ -21,9 +21,8 @@ import (
 	"time"
 
 	"github.com/iainjreid/source/cmd/src/internal/cli"
-	"github.com/iainjreid/source/db/postgres"
-	"github.com/iainjreid/source/db/postgres/storer"
 	"github.com/iainjreid/source/internal/logger"
+	"github.com/iainjreid/source/plugins/storage/postgresql"
 	"github.com/iainjreid/source/ssh"
 	"github.com/iainjreid/source/web"
 	"golang.org/x/sync/errgroup"
@@ -111,17 +110,16 @@ func Cmd(ctx context.Context, args []string) {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
-	pg, err := postgres.Connect(ctx, *db)
+	storage, err := postgresql.Init(ctx, *db)
 	if err != nil {
 		cli.Fatalf(cli.Failure, "Error whilst connecting to DB: %s", err)
 	}
 
 	wg := new(errgroup.Group)
 
-	storage := storer.NewStorage(pg.Pool, "")
 	wg.Go(func() error {
 		slog.Info("Starting Web server")
-		return web.NewServer(pg, storage, *httpPort)
+		return web.NewServer(storage, *httpPort)
 	})
 
 	if *sshId != "" {
