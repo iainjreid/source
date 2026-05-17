@@ -21,7 +21,7 @@ import (
 
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/storer"
-	"github.com/go-git/go-git/v5/storage"
+	"github.com/iainjreid/source/storage"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -33,27 +33,14 @@ type ReferenceStorage struct {
 
 // Reference loads a Git reference from storage.
 func (r *ReferenceStorage) Reference(name plumbing.ReferenceName) (*plumbing.Reference, error) {
-	slog.Debug("finding reference", "name", name)
-
-	rows, err := r.Pool.Query(context.Background(), `
-		SELECT
-			refs.type,
-			refs.hash,
-			refs.name,
-			refs.target
-		FROM refs
-		JOIN repos
-			ON refs.repo_id = repos.id
-		WHERE repos.name = $1
-    		AND refs.name = $2;`, r.Name, name)
+	rows, err := r.Pool.Query(context.Background(), storage.GetRefQuery, r.Name, name)
+	defer rows.Close()
 
 	if err != nil {
 		return nil, &plumbing.UnexpectedError{
 			Err: err,
 		}
 	}
-
-	defer rows.Close()
 
 	if !rows.Next() {
 		return nil, plumbing.ErrReferenceNotFound
@@ -72,16 +59,7 @@ func (r *ReferenceStorage) Reference(name plumbing.ReferenceName) (*plumbing.Ref
 // IterReferences returns an iterator capable of walking through all available
 // Git references.
 func (r *ReferenceStorage) IterReferences() (storer.ReferenceIter, error) {
-	rows, err := r.Pool.Query(context.Background(), `
-		SELECT
-			refs.type,
-			refs.hash,
-			refs.name,
-			refs.target
-		FROM refs
-		JOIN repos
-			ON refs.repo_id = repos.id
-		WHERE repos.name = $1;`, r.Name)
+	rows, err := r.Pool.Query(context.Background(), storage.GetRefsQuery, r.Name)
 
 	if err != nil {
 		return nil, &plumbing.UnexpectedError{
@@ -105,22 +83,7 @@ func (r *ReferenceStorage) SetReference(ref *plumbing.Reference) error {
 
 	slog.Debug("setting reference", "name", ref.Name(), "hash", ref.Hash().String())
 
-	query := `
-		INSERT INTO refs (
-			repo_id,
-			type,
-			hash,
-			name,
-			target
-		)
-		SELECT
-			repos.id,
-			$2, $3, $4, $5
-		FROM repos
-		WHERE repos.name = $1;
-	`
-
-	if result, err := r.Pool.Exec(context.Background(), query, r.Name, ref.Type(), ref.Hash(), ref.Name(), ref.Target()); err != nil {
+	if result, err := r.Pool.Exec(context.Background(), storage.InsertRef, r.Name, ref.Type(), ref.Hash(), ref.Name(), ref.Target()); err != nil {
 		slog.Debug("error whilst setting reference", "name", ref.Name())
 		return &plumbing.UnexpectedError{
 			Err: err,
@@ -136,19 +99,7 @@ func (r *ReferenceStorage) SetReference(ref *plumbing.Reference) error {
 func (r *ReferenceStorage) RemoveReference(name plumbing.ReferenceName) error {
 	slog.Debug("deleting reference", "name", name)
 
-	query := `
-		DELETE FROM refs
-		WHERE EXISTS (
-			SELECT 1
-			FROM refs r
-			JOIN repos
-				ON r.repo_id = repos.id
-			WHERE repos.name = $1
-		)
-			AND refs.name = $2;
-	`
-
-	if result, err := r.Pool.Exec(context.Background(), query, r.Name, name); err != nil {
+	if result, err := r.Pool.Exec(context.Background(), storage.DeleteRef, r.Name, name); err != nil {
 		slog.Debug("error whilst deleting reference", "name", name)
 		return &plumbing.UnexpectedError{
 			Err: err,
@@ -175,15 +126,9 @@ func (r *ReferenceStorage) CheckAndSetReference(new, old *plumbing.Reference) er
 }
 
 func (r *ReferenceStorage) CountLooseRefs() (int, error) {
-	query, err := r.Pool.Query(context.Background(), `
-		SELECT
-			COUNT(*)
-		FROM refs
-		JOIN repos
-			ON refs.repo_id = repos.id
-		WHERE repos.name = $1;`, r.Name)
-
+	query, err := r.Pool.Query(context.Background(), storage.CountRefs, r.Name)
 	defer query.Close()
+
 	if err != nil {
 		return 0, &plumbing.UnexpectedError{
 			Err: err,

@@ -14,6 +14,10 @@
 
 // Package storage provides behaviours associated with the storing of Git
 // objects and references.
+//
+// For storage plugin implementations that use SQL, the provided embedded
+// schemas and queries should hopefully be sufficiently portable to work in the
+// vast majority of cases.
 package storage
 
 import (
@@ -23,10 +27,28 @@ import (
 	"github.com/go-git/go-git/v5/storage"
 )
 
+// Schemas and queries that cover the base requirements when implementing a
+// storage plugin. For their usage, refer to the documentation in each file.
+var (
+	//go:embed queries/count_refs.sql
+	CountRefs string
+
+	//go:embed queries/delete_ref.sql
+	DeleteRef string
+
+	//go:embed queries/get_ref.sql
+	GetRefQuery string
+
+	//go:embed queries/get_refs.sql
+	GetRefsQuery string
+
+	//go:embed queries/insert_ref.sql
+	InsertRef string
+)
+
 // Three tables provide all of the core functionality currently offered by the
 // project. In future more tables will be required to support user management
 // and other behaviours.
-
 var (
 	//go:embed schemas/repos.sql
 	ReposSchema string
@@ -41,7 +63,6 @@ var (
 // For those implementing their own storage plugin, the following schemas are
 // optional. Be mindful that if you opt to not include these schemas, the join
 // tables should also be omitted.
-
 var (
 	//go:embed schemas/topics.sql
 	TopicsSchema string
@@ -58,10 +79,17 @@ var (
 
 // Lastly, we have the join tables. Currently limited to providing support for
 // repository topics at this time.
-
 var (
 	//go:embed schemas/repos_topics.sql
 	ReposTopicsSchema string
+)
+
+// As the codebase is steared away from the hard dependency on internal code
+// exposed by "go-git", some errors from the storage package need to be
+// proxied (not sure of the Golang specific term for this?) to upstream imports
+// clean.
+var (
+	ErrReferenceHasChanged = storage.ErrReferenceHasChanged
 )
 
 // A Repo represents a repository that may exist within the database, but we do
