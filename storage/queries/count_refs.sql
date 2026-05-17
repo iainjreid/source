@@ -8,6 +8,6 @@ SELECT
 FROM refs
 
 JOIN repos
-    ON refs.repo_id = repos.id
+  ON refs.repo_id = repos.id
 
 WHERE repos.name = $1;

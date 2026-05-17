@@ -12,12 +12,12 @@ CREATE TABLE repos (
 
     name            TEXT NOT NULL,
     description     TEXT NOT NULL DEFAULT '',
-    
+
     created_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     license_id      CHAR(36),
     language_id     CHAR(36),
-    
+
     default_branch  CHAR(36)
 );

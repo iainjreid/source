@@ -1,6 +1,6 @@
 /*
  * This query deletes a reference from a repository given their respective
- * names. 
+ * names.
  *
  * $1 - The name of the repository to which the reference belongs
  * $2 - The name of the reference to delete
@@ -11,7 +11,7 @@ WHERE EXISTS (
     FROM refs r
 
     JOIN repos
-        ON r.repo_id = repos.id
+      ON r.repo_id = repos.id
 
     WHERE repos.name = $1
 )

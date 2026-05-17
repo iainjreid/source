@@ -1,4 +1,4 @@
-/* 
+/*
  * This query selects a reference within a repository given their respective
  * names.
  *
@@ -6,10 +6,10 @@
  * $2 - The name of the reference to find
  */
 SELECT
-  refs.type,
-  refs.hash,
-  refs.name,
-  refs.target
+    refs.type,
+    refs.hash,
+    refs.name,
+    refs.target
 FROM refs
 
 JOIN repos
