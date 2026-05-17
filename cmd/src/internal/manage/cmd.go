@@ -25,7 +25,7 @@ import (
 
 var usage = `Usage:
     src manage [--db <uri>] [-q | --quiet] [-v | --verbose] [-j | --json]
-               [-h | --help] [--setup] [--clone <uri>] [--debug]
+               [-h | --help] [--setup] [-c, --clone <uri>] [--debug]
 
 Perform actions that can initialise and or modify your Source installation. All
 changes are made directly through the storage layer, and do not need an active
