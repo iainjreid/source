@@ -17,7 +17,6 @@ package ssh
 import (
 	"context"
 	"fmt"
-	"io"
 	"log/slog"
 	"net"
 
@@ -46,23 +45,7 @@ func (i *IdentityLoader) Load(ep *transport.Endpoint) (storer.Storer, error) {
 	if err != nil {
 		return nil, err
 	}
-	return i.storer.WithName(name), nil
-}
-
-type LoggedReadWriter struct {
-	internal io.ReadWriter
-}
-
-func (l LoggedReadWriter) Read(data []byte) (int, error) {
-	i, e := l.internal.Read(data)
-	// println("read  ", string(data[:]))
-	return i, e
-}
-
-func (l LoggedReadWriter) Write(data []byte) (int, error) {
-	i, e := l.internal.Write(data)
-	// println("write ", string(data[:]))
-	return i, e
+	return repo, nil
 }
 
 var config = &ssh.ServerConfig{
@@ -210,8 +193,6 @@ func handleSSHSession(svr *server, ch ssh.Channel, reqc <-chan *ssh.Request) {
 func handleReceivePack(svr transport.Transport, ch ssh.Channel, path string) error {
 	ctx := context.Background()
 
-	chwrap := LoggedReadWriter{internal: ch}
-
 	ep, err := transport.NewEndpoint(path)
 	if err != nil {
 		return fmt.Errorf("create transport endpoint: %w", err)
@@ -227,16 +208,16 @@ func handleReceivePack(svr transport.Transport, ch ssh.Channel, path string) err
 		return fmt.Errorf("get advertised references: %w", err)
 	}
 
-	err = advertisedReferences.Encode(chwrap)
+	err = advertisedReferences.Encode(ch)
 	if err != nil {
 		return fmt.Errorf("encode advertised references: %w", err)
 	}
 
 	referenceUpdateRequest := packp.NewReferenceUpdateRequest()
-	err = referenceUpdateRequest.Decode(chwrap)
+	err = referenceUpdateRequest.Decode(ch)
 	if err != nil {
 		if err == packp.ErrFlushPacketRecieved {
-			return pktline.NewEncoder(chwrap).Flush()
+			return pktline.NewEncoder(ch).Flush()
 		} else {
 			return fmt.Errorf("decode reference-update request: %w", err)
 		}
@@ -246,7 +227,7 @@ func handleReceivePack(svr transport.Transport, ch ssh.Channel, path string) err
 	if err != nil {
 		return fmt.Errorf("create receive-pack response: %w", err)
 	}
-	err = res.Encode(chwrap)
+	err = res.Encode(ch)
 	if err != nil {
 		return fmt.Errorf("encode receive-pack response: %w", err)
 	}
@@ -256,8 +237,6 @@ func handleReceivePack(svr transport.Transport, ch ssh.Channel, path string) err
 
 func handleUploadPack(svr transport.Transport, ch ssh.Channel, path string) error {
 	ctx := context.Background()
-
-	chwrap := LoggedReadWriter{internal: ch}
 
 	ep, err := transport.NewEndpoint(path)
 	if err != nil {
@@ -273,13 +252,13 @@ func handleUploadPack(svr transport.Transport, ch ssh.Channel, path string) erro
 		return fmt.Errorf("get advertised references: %w", err)
 	}
 
-	err = ar.Encode(chwrap)
+	err = ar.Encode(ch)
 	if err != nil {
 		return fmt.Errorf("encode advertised references: %w", err)
 	}
 
 	upr := packp.NewUploadPackRequest()
-	err = upr.Decode(chwrap)
+	err = upr.Decode(ch)
 	if err != nil {
 		return fmt.Errorf("decode upload-pack request: %w", err)
 	}
