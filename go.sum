@@ -75,8 +75,6 @@ github.com/hexops/gotextdiff v1.0.3 h1:gitA9+qJrrTCsiCl7+kh75nPqQt1cx4ZkudSTLoUq
 github.com/hexops/gotextdiff v1.0.3/go.mod h1:pSWU5MAI3yDq+fZBTazCSJysOMbxWL1BSow5/V2vxeg=
 github.com/iainjreid/go-git/v5 v5.9.0-patched h1:GpuoM4ddgcy7fq5DlYCS2PHtm0JHjWjVagWYaswgSEs=
 github.com/iainjreid/go-git/v5 v5.9.0-patched/go.mod h1:hWdW5P4YZRjmpGHwRH2v3zkWcNl6HeXaXQEMGb3NJ9A=
-github.com/iainjreid/stencil v0.0.2 h1:Is/LX8/9MLilqSZ0mwpTTjhL55p5p6Vp7oHzD8WtsZs=
-github.com/iainjreid/stencil v0.0.2/go.mod h1:tzRWBz2U72Smgtd5TmhMKqQyHOHpPyWgU3ZSU+X5Uq0=
 github.com/iainjreid/stencil v0.0.3 h1:MqWPFbpq66Px4AS4bbjK9YGLC9DKNtswIhceMvkEqkE=
 github.com/iainjreid/stencil v0.0.3/go.mod h1:tzRWBz2U72Smgtd5TmhMKqQyHOHpPyWgU3ZSU+X5Uq0=
 github.com/jackc/pgpassfile v1.0.0 h1:/6Hmqy13Ss2zCq62VdNG8tM1wchn8zjSGOBJ6icpsIM=
