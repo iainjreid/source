@@ -63,12 +63,11 @@ func CloneRepo(store storage.Repo, url string) *Repo {
 }
 
 func OpenRepo(repo storage.Repo) *Repo {
-	gitrepo, err := git.Open(repo, nil)
-
 	return &Repo{
 		Name: repo.Name(),
-		repo: gitrepo,
-		err:  err,
+		repo: &git.Repository{
+			Storer: repo,
+		},
 	}
 }
 
