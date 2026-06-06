@@ -1,63 +1,106 @@
 # Source
 
-A horizontally scalable Git server.
+Source is an experimental Git server that stores Git objects in a database
+rather than on a filesystem.
 
 ## Introduction
 
-This project aims to fully decouple the underlying durable storage beneath
-Git repositories from the Git protocol itself, to reduce both the
-technical and economical costs of horizontally scaling a Git server.
+Traditionally, Git hosting platforms rely on the local filesystem as the
+durable store for repository data. As a deployment grows, concerns such as
+replication, backups, failover, and storage management can only be
+addressed by introducing increasingly sophisticated storage infrastructure
+around that filesystem.
 
-## Getting started
+Source explores a different approach, delegating object storage entirely
+to a database. By using a database as the system of record, Source can
+inherit the durability, replication, backup, and recovery mechanisms that
+databases already provide, while avoiding the operational complexity of
+distributed filesystems.
 
-A connection to a Postgres instance is required to run Source, so please
-ensure you have a working database before continuing. Instructions on how
-to setup a Postgres server is beyond the scope of this project, but for
-brevity, the following should enable most test cases[^1].
+The goal is not to change Git itself, but to reconsider how Git servers
+are built. Git remains the protocol, the object model, and the user
+experience, but the underlying storage architecture, however, is designed
+around software that has spent decades addressing the complexities of
+availability and data integrity at scale.
+
+Source is intentionally narrow in scope. While it includes a lightweight
+web interface for browsing repositories, it does not aim to compete with
+full-featured software forges. Features such as issue tracking, CI/CD,
+project management, and social coding are deliberately outside the core
+mission of the project.
+
+Instead, the focus is on providing a performant, scalable Git server that
+can be deployed as a single binary and serve as a foundation upon which
+other tools and applications can be built.
+
+At present, PostgreSQL is the only supported database backend. Support for
+additional databases will be introduced in the future, but the immediate
+goal is to deliver a stable beta release and validate the architectural
+ideas that motivated the project.
+
+## Getting Started
+
+Source requires a PostgreSQL database to store repository data. While
+setting up a PostgreSQL database is beyond the scope of this document, the
+following command should provide a suitable instance for experimentation
+and development[^1].
 
 ```sh
 docker run -e POSTGRES_HOST_AUTH_METHOD=trust -p 5433:5432 -d postgres
 ```
 
-In the current absence of an install script, the project also requires
-a working Go environment supporting version 1.25 or higher.
+### Building Source
 
-Clone the project, install the dependencies, and build the program.
+At present, Source must be built from source and requires Go 1.25 or
+later.
+
+Cloning the repository, downloading the project dependencies, and then
+building Source can be achieved by running the following.
 
 ```sh
-# Clone
+# Clone the repository
 git clone https://github.com/iainjreid/source.git && cd source
 
-# Install
+# Install the project dependencies
 go mod download
 
-# Build
+# Build the server binary
 make src
 ```
 
-With the project built, and a Postgres instance standing by you should be
-able to setup `src` with a repository or your choosing.
+### Initialising the Database
 
-The instructions below will clone the projects own source code into the
-database, but you can change this by providing a URL or your choice.
+Before Source can serve repositories, the database schema must be created
+and at least one repository must have been imported.
+
+The command below will create the required schemas and clone Source's own
+source code into the database (you can change this by providing a URL to
+a repository of your own choice).
 
 ```sh
 ./src manage --db "postgresql://postgres@localhost" --setup \
              --clone https://github.com/iainjreid/source.git
 ```
 
-With the database ready, you can start `src` and browse the repository in
-your browser. At http://localhost:8080/source
+### Starting the Server
+
+Once initialised, you can go ahead and start your Source instance.
 
 ```sh
 ./src start --db "postgresql://postgres@localhost"
 ```
 
-### Enabling SSH support
+The web interface can be found at <http://localhost:8080>, but the port
+can be specified to suit your needs along with a handful of other options
+documented under the `./src start --help` command.
 
-To support interactions over SSH, you will have to provide Source with
-a private key to be used by its SSH server. To generate a local key pair
-run the following command and be sure to leave the password empty[^2].
+### Enabling SSH Access
+
+Source includes a built-in SSH server. It does not require OpenSSH to be
+installed, but it does require a valid private key to operate.
+
+To generate a private key for the server, run the following and be sure to
+leave the passphrase empty[^2].
 
 ```sh
 ssh-keygen -m PEM -t rsa -b 4096 -f ./key # ... or any other path
@@ -67,7 +110,8 @@ This key can be passed to Source using the `--ssh-key` flag along with the
 other required runtime flags.
 
 ```sh
-./src start --db "postgresql://postgres@localhost" --ssh-id-path ./key
+./src start --db "postgresql://postgres@localhost" \
+            --ssh-id-path ./key
 ```
 
 ## Troubleshooting
@@ -96,10 +140,10 @@ collaborate successfully via Git. Cloning, pushing, pulling, fetching, are
 all operational with no noticeable performance bottlenecks at this stage.
 
 The web interface is limited, but is on par performance-wise with
-Sourcehut, although lacks functionality beyond simply browsing
+Sourcehut, although it lacks functionality beyond simply browsing
 a repository.
 
-## Future development
+### Future development
 
 * Issue management via Git notes, with the ability to discuss and provide
   feedback within the repository itself.
@@ -110,7 +154,7 @@ a repository.
 * Support partial checkouts without requiring changes to how Git stores
   objects internally.
 
-## Current limitations
+### Current limitations
 
 * Synchronising objects from upstream remotes over SSH will require
   additional work to support knownhosts first.
@@ -122,6 +166,11 @@ a repository.
   That said, there's nothing stopping Source from supporting LFS. Many
   databases offer a range of options to support large file storage,
   including PostgreSQL.
+
+## License
+
+Source is licensed under the Apache License. See [LICENSE](./LICENSE) for
+details.
 
 [^1]: Setting `POSTGRES_HOST_AUTH_METHOD=trust` disables password
     authentication and should only be used on personal or well secured
