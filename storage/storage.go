@@ -23,8 +23,12 @@ package storage
 import (
 	"context"
 	_ "embed"
+	"fmt"
+	"net/url"
+	"sync"
 
 	"github.com/go-git/go-git/v5/storage"
+	"github.com/iainjreid/source/storage/driver"
 )
 
 // Schemas and queries that cover the base requirements when implementing a
@@ -86,63 +90,54 @@ var (
 
 // As the codebase is steared away from the hard dependency on internal code
 // exposed by "go-git", some errors from the storage package need to be
-// proxied (not sure of the Golang specific term for this?) to upstream imports
-// clean.
+// proxied (not sure of the Golang specific term for this?) to keep upstream
+// imports clean.
 var (
 	ErrReferenceHasChanged = storage.ErrReferenceHasChanged
 )
 
-// A Repo represents a repository that may exist within the database, but we do
-// not need to know this to still perform optimistic queries on its behalf.
-//
-// For databases that support joins, or equivalent behaviour, knowing just the
-// name of the repository will allow us to defer the existance check to the
-// database itself when the time comes.
-type Repo interface {
-	Name() string
-	Description() string
+var (
+	mu      sync.RWMutex
+	drivers = map[string]driver.Driver{}
+)
 
-	Create(ctx context.Context) error
+func Register(scheme string, driver driver.Driver) {
+	mu.Lock()
+	defer mu.Unlock()
 
-	Exists() (bool, error)
+	if driver == nil {
+		panic("sql: Register driver is nil")
+	}
 
-	Load(ctx context.Context) error
+	if _, exists := drivers[scheme]; exists {
+		panic("driver already registered: " + scheme)
+	}
 
-	IterObjects(ctx context.Context)
-
-	// GetObject(ctx context.Context, objHash string)
-
-	// IterRefs(ctx context.Context)
-
-	// GetRef(ctx context.Context, refHash string)
-
-	storage.Storer
+	drivers[scheme] = driver
 }
 
-// Storage is an interface representing the expected shape of a storage
-// abstraction layer.
-type Storage interface {
-	// Protocol is expected to return the protocol that the Plugin supports. If
-	// this protocol doesn't match the expected value (if the Plugin has been
-	// installed under a different name) then the program will exit.
-	Protocol() string
+func Lookup(scheme string) (driver.Driver, error) {
+	mu.RLock()
+	defer mu.RUnlock()
 
-	// EnsureReady is expected to create or check for the existance of all
-	// tables, indexes, and other functionality required for a given database to
-	// accept writes.
-	EnsureReady(context.Context) error
+	d, ok := drivers[scheme]
+	if !ok {
+		return nil, fmt.Errorf("unsupported database scheme %q", scheme)
+	}
 
-	// IterRepos(ctx context.Context, search any) iter.Seq[Repo]
+	return d, nil
+}
 
-	// Repo is expected to return a struct that implements the [Repo] interface.
-	// The repository may or may not exist, but it is not for this method to
-	// retermine that.
-	//
-	// If the repository data is required at any time, it will be loaded using
-	// the appropriate method on the [Repo] interface.
-	Repo(name string) Repo
+func Open(ctx context.Context, rawURL string) (driver.Store, error) {
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return nil, err
+	}
 
-	// ListRepos should return a slice of the available repositories stored with
-	// the database.
-	ListRepos(context.Context) ([]Repo, error)
+	d, err := Lookup(u.Scheme)
+	if err != nil {
+		return nil, err
+	}
+
+	return d.Open(ctx, rawURL)
 }

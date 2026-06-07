@@ -21,14 +21,15 @@ import (
 	"time"
 
 	"github.com/iainjreid/source/cmd/src/internal/cli"
+	_ "github.com/iainjreid/source/internal/drivers"
 	"github.com/iainjreid/source/internal/logger"
-	"github.com/iainjreid/source/plugins/storage/postgresql"
 	"github.com/iainjreid/source/ssh"
+	"github.com/iainjreid/source/storage"
 	"github.com/iainjreid/source/web"
 	"golang.org/x/sync/errgroup"
 )
 
-var usage = `Usage: 
+var usage = `Usage:
     src start [--db <uri>] [-q | --quiet] [-v | --verbose] [-j | --json]
               [-h | --help] [-i | --ssh-id-path <path>] [-I | --ssh-id <string>]
               [--ssh-port <number>] [--http-port <number>] [--debug]
@@ -110,7 +111,7 @@ func Cmd(ctx context.Context, args []string) {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
-	storage, err := postgresql.Init(ctx, *db)
+	storage, err := storage.Open(ctx, *db)
 	if err != nil {
 		cli.Fatalf(cli.Failure, "Error whilst connecting to DB: %s", err)
 	}

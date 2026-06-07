@@ -19,8 +19,9 @@ import (
 
 	"github.com/iainjreid/source/cmd/src/internal/cli"
 	"github.com/iainjreid/source/git"
+	_ "github.com/iainjreid/source/internal/drivers"
 	"github.com/iainjreid/source/internal/logger"
-	"github.com/iainjreid/source/plugins/storage/postgresql"
+	"github.com/iainjreid/source/storage"
 )
 
 var usage = `Usage:
@@ -85,10 +86,9 @@ func Cmd(ctx context.Context, args []string) {
 		cmd.ExplainUsage("--db is required")
 	}
 
-	storage, err := postgresql.Init(ctx, *db)
-
+	storage, err := storage.Open(ctx, *db)
 	if err != nil {
-		cli.Fatal(cli.Failure, err.Error())
+		cli.Fatalf(cli.Failure, "Error whilst connecting to DB: %s", err)
 	}
 
 	if *setup {

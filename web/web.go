@@ -25,13 +25,13 @@ import (
 	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
 	"github.com/iainjreid/source/git"
-	"github.com/iainjreid/source/storage"
+	"github.com/iainjreid/source/storage/driver"
 	"github.com/iainjreid/source/view"
 )
 
 type Index struct {
 	PageName string
-	Repos    []storage.Repo
+	Repos    []driver.Repo
 }
 
 type Error struct {
@@ -47,7 +47,7 @@ func cacheMiddleware() gin.HandlerFunc {
 	}
 }
 
-func NewServer(storage storage.Storage, port int) error {
+func NewServer(storage driver.Store, port int) error {
 	r := gin.Default()
 
 	r.Use(gzip.Gzip(gzip.DefaultCompression))

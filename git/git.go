@@ -26,7 +26,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/storer"
-	"github.com/iainjreid/source/storage"
+	"github.com/iainjreid/source/storage/driver"
 )
 
 type Repo struct {
@@ -35,7 +35,7 @@ type Repo struct {
 	err  error
 }
 
-func CloneRepo(store storage.Repo, url string) *Repo {
+func CloneRepo(store driver.Repo, url string) *Repo {
 	slog.Info("cloning repo", "url", url)
 
 	name, err := GetRepoName(url)
@@ -62,7 +62,7 @@ func CloneRepo(store storage.Repo, url string) *Repo {
 	}
 }
 
-func OpenRepo(repo storage.Repo) *Repo {
+func OpenRepo(repo driver.Repo) *Repo {
 	return &Repo{
 		Name: repo.Name(),
 		repo: &git.Repository{

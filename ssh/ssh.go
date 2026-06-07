@@ -26,15 +26,15 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/storer"
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/iainjreid/source/git"
-	"github.com/iainjreid/source/storage"
+	"github.com/iainjreid/source/storage/driver"
 	"golang.org/x/crypto/ssh"
 )
 
 type IdentityLoader struct {
-	storer storage.Storage
+	storer driver.Store
 }
 
-func NewIdentityLoader(storer storage.Storage) Loader {
+func NewIdentityLoader(storer driver.Store) Loader {
 	return &IdentityLoader{
 		storer: storer,
 	}
@@ -75,7 +75,7 @@ func Init(pemString string) error {
 	return nil
 }
 
-func NewServer(storage storage.Storage, port int) error {
+func NewServer(storage driver.Store, port int) error {
 	loader := NewIdentityLoader(storage)
 	svr := NewSSHServer(loader)
 

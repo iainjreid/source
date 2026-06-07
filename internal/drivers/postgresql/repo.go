@@ -21,11 +21,11 @@ import (
 
 	"github.com/go-git/go-git/v5/storage/memory"
 	"github.com/google/uuid"
-	"github.com/iainjreid/source/storage"
+	"github.com/iainjreid/source/storage/driver"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-var _ (storage.Repo) = &Repo{}
+var _ (driver.Repo) = &Repo{}
 
 // Repo implements the [storage.Repo] interface.
 type Repo struct {
@@ -103,12 +103,4 @@ func (r *Repo) Exists() (bool, error) {
 		);`, r.name).Scan(&exists)
 
 	return exists, err
-}
-
-func (r *Repo) Load(ctx context.Context) error {
-	return nil
-}
-
-func (r *Repo) IterObjects(ctx context.Context) {
-
 }
