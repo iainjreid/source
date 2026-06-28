@@ -22,15 +22,17 @@
 package logger
 
 import (
+	"io"
 	"log/slog"
 	"os"
 )
 
-// Init initialises the default log/slog logger.
-func Init(level slog.Level, json bool, debug bool, attrs []slog.Attr) {
+// New returns a new [slog.Logger] that writes to the provided [io.Writer]. This
+// method exists to support testing of the logging behaviour.
+func New(w io.Writer, level slog.Level, json bool, debug bool, attrs []slog.Attr) *slog.Logger {
 	var handler slog.Handler
 
-	// If debug is enable, override the log level accordingly.
+	// If debug is enabled, override the log level accordingly.
 	if debug {
 		level = slog.LevelDebug
 	}
@@ -43,14 +45,19 @@ func Init(level slog.Level, json bool, debug bool, attrs []slog.Attr) {
 	}
 
 	if json {
-		handler = slog.NewJSONHandler(os.Stdout, opts)
+		handler = slog.NewJSONHandler(w, opts)
 	} else {
-		handler = slog.NewTextHandler(os.Stdout, opts)
+		handler = slog.NewTextHandler(w, opts)
 	}
 
 	// TODO: Document which attributes are to be included in logs.
 	handler = handler.WithAttrs(attrs)
 
-	// Set the default structured logger with our opinionated one.
-	slog.SetDefault(slog.New(handler))
+	return slog.New(handler)
+}
+
+// Init initialises the assigns the default slog logger. Logs are written to
+// standard output.
+func Init(level slog.Level, json bool, debug bool, attrs []slog.Attr) {
+	slog.SetDefault(New(os.Stdout, level, json, debug, attrs))
 }
