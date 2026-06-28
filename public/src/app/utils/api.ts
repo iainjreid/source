@@ -28,7 +28,7 @@ export interface File {
 }
 
 export function GetFile(repoId: string, ref: string, path: string): APIRes<File> {
-  return request<File>(`http://localhost:8080/${repoId}/blob/${ref}/${path}`);
+  return request<File>(`/${repoId}/blob/${ref}/${path}`);
 }
 
 interface APIRes<T> {

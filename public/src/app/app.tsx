@@ -239,7 +239,7 @@ export function App() {
   // Fetch branches and tags once on mount
   useEffect(() => {
     const controller = new AbortController();
-    fetch(`http://localhost:8080/019f0abd-ffd8-7518-80ee-138dd420badc/refs`, { signal: controller.signal })
+    fetch(`/019f0abd-ffd8-7518-80ee-138dd420badc/refs`, { signal: controller.signal })
       .then(async (res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status} — ${res.statusText}`);
         const data: ApiRefs = await res.json();
@@ -268,7 +268,7 @@ export function App() {
   useEffect(() => {
     if (!refValue) return;
     const controller = new AbortController();
-    const url = `http://localhost:8080/${REPO}/tree/${encodeURIComponent(refValue.hash)}`;
+    const url = `/${REPO}/tree/${encodeURIComponent(refValue.hash)}`;
 
     setTreeState({ status: "loading" });
 
