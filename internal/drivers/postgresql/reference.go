@@ -21,37 +21,54 @@ import (
 
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/storer"
+	lru "github.com/hashicorp/golang-lru/v2"
 	"github.com/iainjreid/source/storage"
+	"github.com/iainjreid/source/storage/driver"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type ReferenceStorage struct {
-	Name string
-	Pool *pgxpool.Pool
+	ID    string
+	Pool  *pgxpool.Pool
+	Cache *lru.Cache[string, *plumbing.Reference]
 }
 
 // Reference loads a Git reference from storage.
 func (r *ReferenceStorage) Reference(name plumbing.ReferenceName) (*plumbing.Reference, error) {
-	rows, err := r.Pool.Query(context.Background(), storage.GetRefQuery, r.Name, name)
+	if ref, exists := r.Cache.Get(name.Short()); exists {
+		return ref, nil
+	} else {
+		slog.Debug("not found", "name", name)
+	}
+
+	slog.Debug("getting reference", "name", name)
+
+	rows, err := r.Pool.Query(context.Background(), storage.GetRefQuery, r.ID, name)
 	defer rows.Close()
 
 	if err != nil {
+		slog.Debug("err", "err", err)
 		return nil, &plumbing.UnexpectedError{
 			Err: err,
 		}
 	}
 
 	if !rows.Next() {
+		slog.Debug("Next", "err", err)
 		return nil, plumbing.ErrReferenceNotFound
 	}
 
 	obj, err := scanReference(rows)
 	if err != nil {
+		slog.Debug("scanReference", "err", err)
 		return nil, &plumbing.UnexpectedError{
 			Err: err,
 		}
 	}
+
+	evicted := r.Cache.Add(name.Short(), obj)
+	slog.Debug("added to cache", "evicted", evicted)
 
 	return obj, nil
 }
@@ -59,7 +76,9 @@ func (r *ReferenceStorage) Reference(name plumbing.ReferenceName) (*plumbing.Ref
 // IterReferences returns an iterator capable of walking through all available
 // Git references.
 func (r *ReferenceStorage) IterReferences() (storer.ReferenceIter, error) {
-	rows, err := r.Pool.Query(context.Background(), storage.GetRefsQuery, r.Name)
+	slog.Debug("iterating references")
+
+	rows, err := r.Pool.Query(context.Background(), storage.GetRefsQuery, r.ID)
 
 	if err != nil {
 		return nil, &plumbing.UnexpectedError{
@@ -67,9 +86,9 @@ func (r *ReferenceStorage) IterReferences() (storer.ReferenceIter, error) {
 		}
 	}
 
-	return NewIterator(rows.Next, rows.Close, func() (*plumbing.Reference, error) {
+	return driver.NewScannableIterator(rows.Next, rows.Close, func() (*plumbing.Reference, error) {
 		return scanReference(rows)
-	})
+	}), nil
 }
 
 // SetReference writes a Git reference to storage, replacing it if reference
@@ -83,7 +102,7 @@ func (r *ReferenceStorage) SetReference(ref *plumbing.Reference) error {
 
 	slog.Debug("setting reference", "name", ref.Name(), "hash", ref.Hash().String())
 
-	if result, err := r.Pool.Exec(context.Background(), storage.InsertRef, r.Name, ref.Type(), ref.Hash(), ref.Name(), ref.Target()); err != nil {
+	if result, err := r.Pool.Exec(context.Background(), storage.InsertRef, r.ID, ref.Type(), ref.Hash(), ref.Name(), ref.Target()); err != nil {
 		slog.Debug("error whilst setting reference", "name", ref.Name())
 		return &plumbing.UnexpectedError{
 			Err: err,
@@ -99,7 +118,7 @@ func (r *ReferenceStorage) SetReference(ref *plumbing.Reference) error {
 func (r *ReferenceStorage) RemoveReference(name plumbing.ReferenceName) error {
 	slog.Debug("deleting reference", "name", name)
 
-	if result, err := r.Pool.Exec(context.Background(), storage.DeleteRef, r.Name, name); err != nil {
+	if result, err := r.Pool.Exec(context.Background(), storage.DeleteRef, r.ID, name); err != nil {
 		slog.Debug("error whilst deleting reference", "name", name)
 		return &plumbing.UnexpectedError{
 			Err: err,
@@ -125,27 +144,14 @@ func (r *ReferenceStorage) CheckAndSetReference(new, old *plumbing.Reference) er
 	return r.SetReference(new)
 }
 
+// CountLooseRefs is not required to be implemented.
 func (r *ReferenceStorage) CountLooseRefs() (int, error) {
-	query, err := r.Pool.Query(context.Background(), storage.CountRefs, r.Name)
-	defer query.Close()
-
-	if err != nil {
-		return 0, &plumbing.UnexpectedError{
-			Err: err,
-		}
+	return 0, &plumbing.UnexpectedError{
+		Err: fmt.Errorf("not supported"),
 	}
-
-	var count int
-	if err := query.Scan(&count); err != nil {
-		return 0, &plumbing.UnexpectedError{
-			Err: err,
-		}
-	}
-
-	return count, nil
 }
 
-// PackRefs is not currently implemented.
+// PackRefs is not required to be implemented.
 func (r *ReferenceStorage) PackRefs() error {
 	return &plumbing.UnexpectedError{
 		Err: fmt.Errorf("not supported"),

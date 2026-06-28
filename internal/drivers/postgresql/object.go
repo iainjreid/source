@@ -23,15 +23,17 @@ import (
 
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/storer"
+	lru "github.com/hashicorp/golang-lru/v2"
+	"github.com/iainjreid/source/storage/driver"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"golang.org/x/sync/errgroup"
 )
 
 type ObjectStorage struct {
-	Name   string
 	ID     string
 	Pool   *pgxpool.Pool
+	Cache  *lru.Cache[string, plumbing.EncodedObject]
 	buffer map[string]plumbing.EncodedObject
 }
 
@@ -50,15 +52,17 @@ func (o *ObjectStorage) EncodedObject(objType plumbing.ObjectType, objHash plumb
 		}
 	}
 
+	if obj, exists := o.Cache.Get(objHash.String()); exists {
+		return obj, nil
+	}
+
 	rows, err := o.Pool.Query(context.Background(), `
 		SELECT
 			objects.type,
 			objects.contents
 		FROM objects
-		JOIN repos
-			ON objects.repo_id = repos.id
-		WHERE repos.name = $1
-			AND objects.hash = $2;`, o.Name, objHash.String())
+		WHERE objects.repo_id = $1
+			AND objects.hash = $2;`, o.ID, objHash.String())
 
 	if err != nil {
 		return nil, &plumbing.UnexpectedError{
@@ -85,6 +89,8 @@ func (o *ObjectStorage) EncodedObject(objType plumbing.ObjectType, objHash plumb
 		return nil, plumbing.ErrObjectNotFound
 	}
 
+	o.Cache.Add(objHash.String(), obj)
+
 	return obj, nil
 }
 
@@ -96,10 +102,8 @@ func (o *ObjectStorage) IterEncodedObjects(objType plumbing.ObjectType) (storer.
 			objects.type,
 			objects.contents
 		FROM objects
-		JOIN repos
-			ON objects.repo_id = repos.id
-		WHERE repos.name = $1
-			AND objects.type = $2;`, o.Name, objType)
+		WHERE objects.repo_id = $1
+			AND objects.type = $2;`, o.ID, objType)
 
 	if err != nil {
 		return nil, &plumbing.UnexpectedError{
@@ -107,9 +111,9 @@ func (o *ObjectStorage) IterEncodedObjects(objType plumbing.ObjectType) (storer.
 		}
 	}
 
-	return NewIterator(rows.Next, rows.Close, func() (plumbing.EncodedObject, error) {
+	return driver.NewScannableIterator(rows.Next, rows.Close, func() (plumbing.EncodedObject, error) {
 		return scanMemoryObject(rows)
-	})
+	}), nil
 }
 
 // EncodedObjectSize returns the size of the contents stored against the object
@@ -125,10 +129,8 @@ func (o *ObjectStorage) EncodedObjectSize(hash plumbing.Hash) (int64, error) {
 		SELECT
 			length
 		FROM objects
-		JOIN repos
-			ON objects.repo_id = repos.id
-		WHERE repos.name = $1
-			AND objects.hash = $2;`, o.Name, hash)
+		WHERE objects.repo_id = $1
+			AND objects.hash = $2;`, o.ID, hash)
 
 	if err != nil {
 		return 0, &plumbing.UnexpectedError{
@@ -159,10 +161,8 @@ func (o *ObjectStorage) HasEncodedObject(hash plumbing.Hash) error {
 		SELECT
 			objects.hash
 		FROM objects
-		JOIN repos
-			ON objects.repo_id = repos.id
-		WHERE repos.name = $1
-			AND objects.hash = $2;`, o.Name, hash)
+		WHERE objects.repo_id = $1
+			AND objects.hash = $2;`, o.ID, hash)
 
 	if err != nil {
 		return &plumbing.UnexpectedError{
@@ -208,14 +208,9 @@ func (o *ObjectStorage) SetEncodedObject(obj plumbing.EncodedObject) (plumbing.H
 			hash,
 			contents,
 			length
-		)
-		SELECT
-			repos.id,
-			$2, $3, $4, $5
-		FROM repos
-		WHERE repos.name = $1;
+		) VALUES ($1, $2, $3, $4, $5);
 	`
-	if _, err := o.Pool.Exec(context.Background(), query, o.Name, obj.Type(), obj.Hash(), cont, obj.Size()); err != nil {
+	if _, err := o.Pool.Exec(context.Background(), query, o.ID, obj.Type(), obj.Hash(), cont, obj.Size()); err != nil {
 		return plumbing.ZeroHash, &plumbing.UnexpectedError{
 			Err: err,
 		}

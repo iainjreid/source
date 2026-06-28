@@ -86,26 +86,20 @@ func Cmd(ctx context.Context, args []string) {
 		cmd.ExplainUsage("--db is required")
 	}
 
-	storage, err := storage.Open(ctx, *db)
+	store, err := storage.Open(ctx, *db)
 	if err != nil {
 		cli.Fatalf(cli.Failure, "Error whilst connecting to DB: %s", err)
 	}
 
 	if *setup {
-		err := storage.EnsureReady(ctx)
+		err := store.EnsureReady(ctx)
 		if err != nil {
 			cli.Fatal(cli.Failure, err.Error())
 		}
 	}
 
 	for _, uri := range *clone {
-		name, err := git.GetRepoName(uri)
-		if err != nil {
-			cli.Fatal(cli.Failure, err.Error())
-		}
-
-		repo := git.CloneRepo(storage.Repo(name), uri)
-		if err := repo.Error(); err != nil {
+		if _, err := git.CloneRepo(ctx, store, uri); err != nil {
 			cli.Fatalf(cli.Failure, "Error whilst cloning repository: %v", err)
 		}
 	}

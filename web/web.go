@@ -16,144 +16,34 @@ package web
 
 import (
 	"fmt"
-	"html/template"
-	"log/slog"
 	"net/http"
-	"path"
-	"time"
 
-	"github.com/gin-contrib/gzip"
-	"github.com/gin-gonic/gin"
-	"github.com/iainjreid/source/git"
+	"github.com/iainjreid/source/public"
 	"github.com/iainjreid/source/storage/driver"
-	"github.com/iainjreid/source/view"
+	"github.com/iainjreid/source/web/handlers"
 )
 
-type Index struct {
-	PageName string
-	Repos    []driver.Repo
-}
+func NewServer(store driver.Store, port int) error {
+	mux := http.NewServeMux()
 
-type Error struct {
-	PageName string
-	Error    string
-}
-
-// Does this achieve anything? Requests for specific blobs should
-// be cached client side. Set an ETag?
-func cacheMiddleware() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		c.Header("Cache-Control", "public, max-age=604800, immutable")
-	}
-}
-
-func NewServer(storage driver.Store, port int) error {
-	r := gin.Default()
-
-	r.Use(gzip.Gzip(gzip.DefaultCompression))
-	r.Use(cacheMiddleware())
-
-	r.RedirectTrailingSlash = true
-	r.RedirectFixedPath = true
-
-	r.SetTrustedProxies(nil)
-
-	loadTemplates(r, template.FuncMap{
-		"treeDepthToOffset": func(depth int) int {
-			return (depth-1)*2 + 1
-		},
-		"htmlSafe": func(html string) template.HTML {
-			return template.HTML(html)
-		},
-	})
-
-	r.GET("/:repo/blob/:hash", func(c *gin.Context) {
-		repo := git.OpenRepo(storage.Repo(c.Param("repo")))
-		hash := c.Param("hash")
-
-		renderFile(c, repo, hash, "/")
-	})
-
-	r.GET("/:repo/blob/:hash/*path", func(c *gin.Context) {
-		repo := git.OpenRepo(storage.Repo(c.Param("repo")))
-
-		hash := c.Param("hash")
-		path := c.Param("path")
-
-		renderFile(c, repo, hash, path)
-	})
-
-	r.GET("/:repo/branches", func(c *gin.Context) {
-		repo := git.OpenRepo(storage.Repo(c.Param("repo")))
-		branches, err := repo.GetBranches()
-
-		if err != nil {
-			renderError(c, err)
-			return
-		}
-
-		c.JSON(http.StatusOK, branches)
-	})
-
-	r.GET("/", func(c *gin.Context) {
-		repos, err := storage.ListRepos(c)
-		if err != nil {
-			c.HTML(http.StatusInternalServerError, "error.tmpl", Error{
-				PageName: "Error",
-				Error:    err.Error(),
-			})
-			return
-		}
-
-		c.HTML(http.StatusOK, "index.tmpl", Index{
-			PageName: "Home",
-			Repos:    repos,
-		})
-	})
-
-	r.GET("/favicon.ico", func(c *gin.Context) {
-		c.JSON(404, gin.H{"message": "Not found"})
-	})
-
-	r.GET("/:repo", func(c *gin.Context) {
-		repo := git.OpenRepo(storage.Repo(c.Param("repo")))
-		c.HTML(http.StatusOK, "repo.tmpl", view.New(repo))
-	})
-
-	r.NoRoute(func(c *gin.Context) {
-		c.JSON(404, gin.H{"message": "Not found"})
-	})
-
-	return r.Run(fmt.Sprintf(":%d", port))
-}
-
-func renderFile(c *gin.Context, repo *git.Repo, revision string, filepath string) {
-	slog.DebugContext(c, "rendering file", "filepath", filepath)
-	dir, file := path.Split(filepath)
-
-	view := view.New(repo)
-	view = view.LoadCommit(revision)
-	view = view.LoadDir(dir)
-
-	if _, err := view.LoadBlob(file, false); err != nil {
-		slog.WarnContext(c, "file not found", "filepath", file)
-
-		if _, err := view.LoadBlob("/README.md", false); err != nil {
-			slog.WarnContext(c, "file not found", "filepath", dir+"/README.md")
-		}
+	h := handlers.Handlers{
+		Store: store,
 	}
 
-	c.HTML(http.StatusOK, "file.tmpl", view)
-}
+	mux.Handle("/", http.FileServer(http.FS(public.Files)))
 
-func renderError(c *gin.Context, err error) {
-	c.HTML(http.StatusOK, "error.tmpl", map[string]interface{}{
-		"now":   time.Now(),
-		"Error": err.Error(),
-	})
-}
+	mux.HandleFunc("GET /{repo}/refs", h.GetRefs)
+	mux.HandleFunc("GET /{repo}/tree/{hash}", h.GetTree)
+	mux.HandleFunc("GET /{repo}/blob/{hash}/{filepath...}", h.GetBlob)
 
-func formatAsDate(t time.Time) string {
-	year, month, day := t.Date()
-	return fmt.Sprintf("%d/%02d/%02d", year, month, day)
+	// handler := middleware.Logging(
+	// 	middleware.Recovery(mux),
+	// )
+
+	srv := &http.Server{
+		Addr:    fmt.Sprintf(":%d", port),
+		Handler: mux,
+	}
+
+	return srv.ListenAndServe()
 }

@@ -46,8 +46,7 @@ func (i *IdentityLoader) Load(ep *transport.Endpoint) (storer.Storer, error) {
 		return nil, err
 	}
 
-	repo := i.storer.Repo(name)
-	exists, err := repo.Exists()
+	exists, err := i.storer.RepoExists(context.TODO(), name)
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +55,7 @@ func (i *IdentityLoader) Load(ep *transport.Endpoint) (storer.Storer, error) {
 		return nil, transport.ErrRepositoryNotFound
 	}
 
-	return repo, nil
+	return i.storer.ToStorer(context.TODO(), name)
 }
 
 var config = &ssh.ServerConfig{

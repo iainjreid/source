@@ -1,9 +1,0 @@
-{{ template "partials/base-start.tmpl" . }}
-<div class="pl-4 sm:pl-6 lg:pl-8">
-  <h1 class="text-3xl font-bold underline">Select a branch to view</h1>
-
-  {{range .Branches}}
-  <p>{{.Name}}: <a href="/{{.RepoName}}/blob/{{.Hash}}">{{.Hash}}</a></p>
-  {{end}}
-</div>
-{{ template "partials/base-stop.tmpl" . }}

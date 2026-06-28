@@ -111,7 +111,7 @@ func Cmd(ctx context.Context, args []string) {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
-	storage, err := storage.Open(ctx, *db)
+	store, err := storage.Open(ctx, *db)
 	if err != nil {
 		cli.Fatalf(cli.Failure, "Error whilst connecting to DB: %s", err)
 	}
@@ -120,13 +120,13 @@ func Cmd(ctx context.Context, args []string) {
 
 	wg.Go(func() error {
 		slog.Info("Starting Web server")
-		return web.NewServer(storage, *httpPort)
+		return web.NewServer(store, *httpPort)
 	})
 
 	if *sshId != "" {
 		wg.Go(func() error {
 			slog.Info("Starting SSH server")
-			return ssh.NewServer(storage, *sshPort)
+			return ssh.NewServer(store, *sshPort)
 		})
 	}
 

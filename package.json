@@ -1,0 +1,21 @@
+{
+  "name": "source",
+  "type": "module",
+  "scripts": {
+    "dev": "vite -c public/vite.config.js build -w",
+    "build": "vite -c public/vite.config.js build"
+  },
+  "dependencies": {
+    "lucide-react": "0.487.0",
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "4.1.12",
+    "@types/prismjs": "^1.26.6",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "tailwindcss": "4.1.12",
+    "vite": "6.3.5"
+  }
+}

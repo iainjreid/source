@@ -106,7 +106,7 @@ func Register(scheme string, driver driver.Driver) {
 	defer mu.Unlock()
 
 	if driver == nil {
-		panic("sql: Register driver is nil")
+		panic("driver cannot be nil")
 	}
 
 	if _, exists := drivers[scheme]; exists {
@@ -128,6 +128,8 @@ func Lookup(scheme string) (driver.Driver, error) {
 	return d, nil
 }
 
+// Open retrieves the driver from the registry that matches the scheme in the
+// provided URL.
 func Open(ctx context.Context, rawURL string) (driver.Store, error) {
 	u, err := url.Parse(rawURL)
 	if err != nil {

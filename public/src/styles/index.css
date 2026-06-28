@@ -1,0 +1,100 @@
+@import './tailwind.css';
+@import './theme.css';
+
+::selection {
+	background-color: #45403d;
+}
+
+.line-numbers {
+	top: 0;
+	font-size: 11px;
+	line-height: 1.5;
+	display: flex;
+	flex-direction: column;
+	border-right: 1px solid color-mix(in oklab, var(--border) 30%, transparent);
+	user-select: none;
+
+	@apply min-h-full;
+}
+
+.line-numbers {
+	counter-reset: linenumber;
+}
+
+.line-numbers > span {
+	counter-increment: linenumber;
+	display: grid;
+	justify-items: end;
+	height: 18px;
+}
+
+.line-numbers > span::before,
+.line-numbers > span::after {
+	grid-area: 1 / 1;
+}
+
+/* Leading zeros */
+.line-numbers > span::before {
+	content: attr(data-pad);
+	color: color-mix(in oklab, var(--muted-foreground) 10%, transparent);
+}
+
+/* Line numbers */
+.line-numbers > span::after {
+	background-color: var(--background);
+	content: counter(linenumber);
+	color: color-mix(in oklab, var(--muted-foreground) 40%, transparent);
+}
+
+code[class*="language-"],
+pre[class*="language-"] {
+	font-family: monospace;
+	font-size: 12px;
+	text-align: left;
+	white-space: pre;
+	word-spacing: normal;
+	word-break: normal;
+	word-wrap: normal;
+	line-height: 1.5;
+
+	tab-size: 4;
+	hyphens: none;
+}
+
+.token.comment,
+.token.prolog,
+.token.doctype,
+.token.cdata {
+	color: #5f5853;
+}
+
+.token.namespace {
+	opacity: .7;
+}
+
+.token.property,
+.token.tag,
+.token.boolean,
+.token.number,
+.token.constant,
+.token.symbol,
+.token.deleted {
+	color: #8c9a8c;
+}
+
+.token.operator,
+.token.entity,
+.token.url,
+.token.string,
+.token.string {
+	color: #a5c5a9;
+}
+
+.token.atrule,
+.token.attr-value,
+.token.keyword,
+.token.regex,
+.token.important,
+.token.variable {
+	color: var(--accent);
+}

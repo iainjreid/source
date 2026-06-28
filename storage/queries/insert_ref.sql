@@ -2,7 +2,7 @@
  * This query inserts a new reference into the "refs" table under the repository
  * identified by the provided name.
  *
- * $1 - The name of the repository
+ * $1 - The ID of the repository
  * $2 - The reference type
  * $3 - The object hash to point to
  * $4 - The full name of the reference
@@ -14,11 +14,4 @@ INSERT INTO refs (
     hash,
     name,
     target
-)
-
-SELECT
-    repos.id,
-    $2, $3, $4, $5
-
-FROM repos
-WHERE repos.name = $1;
+) VALUES ($1, $2, $3, $4, $5);

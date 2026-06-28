@@ -12,34 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package driver provides generic adapters for implementing durable storage
+// drivers.
 package driver
 
 import (
 	"context"
 
+	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/storage"
 )
 
 type Driver interface {
 	Open(context.Context, string) (Store, error)
-}
-
-// Repo represents a repository that may exist within the database, but we do
-// not need to know this to still perform optimistic queries on its behalf.
-//
-// For databases that support joins, or equivalent behaviour, knowing just the
-// name of the repository will allow us to defer the existance check to the
-// database itself when the time comes.
-type Repo interface {
-	Name() string
-
-	Description() string
-
-	Create(ctx context.Context) error
-
-	Exists() (bool, error)
-
-	storage.Storer
 }
 
 // Store is an interface representing the expected shape of a storage
@@ -61,9 +46,45 @@ type Store interface {
 	//
 	// If the repository data is required at any time, it will be loaded using
 	// the appropriate method on the [Repo] interface.
-	Repo(name string) Repo
+	// Repo(name string) Repo
+
+	RepoExists(ctx context.Context, name string) (bool, error)
+
+	GetRepo(context.Context, string) (Repo, error)
+
+	RefStore
+
+	CreateRepo(context.Context, Repo) error
 
 	// ListRepos should return a slice of the available repositories stored with
 	// the database.
 	ListRepos(context.Context) ([]Repo, error)
+
+	ToStorer(ctx context.Context, name string) (storage.Storer, error)
 }
+
+type RepoStore interface {
+}
+
+type RefStore interface {
+	IterateRefs(context.Context, string) (Iterator[*Ref], error)
+}
+
+type ObjectStore interface {
+}
+
+// TODO: Update this documentation.
+//
+// Repo represents a repository that may exist within the database, but we do
+// not need to know this to still perform optimistic queries on its behalf.
+//
+// For databases that support joins, or equivalent behaviour, knowing just the
+// name of the repository will allow us to defer the existance check to the
+// database itself when the time comes.
+type Repo struct {
+	ID          string
+	Name        string
+	Description string
+}
+
+type Ref = plumbing.Reference

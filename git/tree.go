@@ -20,15 +20,15 @@ import (
 )
 
 type TreeEntry struct {
-	Name         string
-	Path         string
-	Hash         string
-	IsFile       bool
-	ChildEntries *TreeEntryMap
-	Commit       *Commit
+	Name         string        `json:"name"`
+	Path         string        `json:"path"`
+	Hash         string        `json:"hash"`
+	IsFile       bool          `json:"isFile"`
+	ChildEntries *TreeEntryMap `json:"children"`
+	Commit       *Commit       `json:"-"`
 
 	// Used in the templates to control spacing
-	Depth int
+	Depth int `json:"-"`
 }
 
 // NewTreeEntry creates an object that represents either a directory or a file
@@ -58,10 +58,10 @@ func (t *TreeEntry) ParentPath() string {
 }
 
 type TreeEntryMap struct {
-	DirEntries  map[string]*TreeEntry
-	FileEntries map[string]*TreeEntry
+	DirEntries  map[string]*TreeEntry `json:"dirs"`
+	FileEntries map[string]*TreeEntry `json:"files"`
 
-	Root *TreeEntry
+	Root *TreeEntry `json:"-"`
 }
 
 // NewTreeEntryMap creates a container for directory and file entries.

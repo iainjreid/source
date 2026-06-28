@@ -1,2 +1,6 @@
 # Ignore any build artifacts
 /src
+
+# Ignore dependencies and build artefacts associated with the frontend
+/node_modules
+/public/dist

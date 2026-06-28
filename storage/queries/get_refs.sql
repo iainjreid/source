@@ -2,7 +2,7 @@
  * This query selects references within a repository given the respository's
  * name.
  *
- * $1 - The name of the repository to search within
+ * $1 - The ID of the repository to search within
  */
  SELECT
     refs.type,
@@ -11,7 +11,4 @@
     refs.target
 FROM refs
 
-JOIN repos
-  ON refs.repo_id = repos.id
-
-WHERE repos.name = $1;
+WHERE refs.repo_id = $1;
