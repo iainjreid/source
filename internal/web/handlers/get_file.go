@@ -40,9 +40,9 @@ type BlobResponse struct {
 	commit *git.Commit
 }
 
-func (b *BlobResponse) LoadCommit(rev string, filepath string) error {
+func (b *BlobResponse) LoadLastCommit(rev string, filepath string) error {
 	iter, err := b.repo.Repo.Log(&gogit.LogOptions{
-		From:     *b.repo.ResolveRevOrHash(rev),
+		From:     plumbing.NewHash(rev),
 		FileName: &filepath,
 	})
 	if err != nil {
@@ -151,7 +151,7 @@ func (h *Handlers) GetBlob(w http.ResponseWriter, r *http.Request) {
 		}
 		blobResponse.StartClock()
 
-		if err := blobResponse.LoadCommit(hash, filepath); err != nil {
+		if err := blobResponse.LoadLastCommit(hash, filepath); err != nil {
 			h.SendErr(w, 500, err.Error())
 			return
 		}
@@ -163,5 +163,41 @@ func (h *Handlers) GetBlob(w http.ResponseWriter, r *http.Request) {
 
 		blobResponse.StopClock()
 		h.SendJSON(w, r, blobResponse)
+	}
+}
+
+func (h *Handlers) GetRawBlob(w http.ResponseWriter, r *http.Request) {
+	repo := r.PathValue("repo")
+	hash := r.PathValue("hash")
+	filepath := r.PathValue("filepath")
+
+	if repo == "" || hash == "" || filepath == "" {
+		h.SendErr(w, 400, "Must supply repo, hash, and filepath")
+		return
+	}
+
+	if repo, err := git.OpenRepo(r.Context(), h.Store, repo); err != nil {
+		h.SendErr(w, 500, err.Error())
+	} else {
+		_hash := plumbing.NewHash(hash)
+		commit, err := repo.GetCommitByHash(&_hash)
+		if err != nil {
+			h.SendErr(w, 500, err.Error())
+			return
+		}
+
+		file, err := commit.Commit.File(path.Clean(filepath))
+		if err != nil {
+			h.SendErr(w, 500, err.Error())
+			return
+		}
+
+		contents, err := file.Reader()
+		if err != nil {
+			h.SendErr(w, 500, err.Error())
+			return
+		}
+
+		h.SendPlain(w, r, contents)
 	}
 }

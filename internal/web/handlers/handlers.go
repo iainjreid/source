@@ -59,6 +59,26 @@ func (h *Handlers) SendJSON(w http.ResponseWriter, r *http.Request, data interfa
 	}
 }
 
+func (h *Handlers) SendPlain(w http.ResponseWriter, r *http.Request, body io.Reader) {
+	w.Header().Set("Content-Type", "text/plain")
+
+	var writer io.Writer = w
+
+	if clientSupportsGzip(r) {
+		w.Header().Set("Content-Encoding", "gzip")
+
+		gz := utils.GetGzipWriter(writer)
+		defer utils.PutGzipWriter(gz)
+
+		writer = gz
+	}
+
+	if _, err := io.Copy(writer, body); err != nil {
+		slog.Error("unable to write plain response", "err", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
 // SendErr sends an HTTP error response with the provided status code and
 // message in the format "<status-code> <message>\n".
 func (h *Handlers) SendErr(w http.ResponseWriter, code int, msg string) {

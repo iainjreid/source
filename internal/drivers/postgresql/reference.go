@@ -36,7 +36,7 @@ type ReferenceStorage struct {
 
 // Reference loads a Git reference from storage.
 func (r *ReferenceStorage) Reference(name plumbing.ReferenceName) (*plumbing.Reference, error) {
-	if ref, exists := r.Cache.Get(name.Short()); exists {
+	if ref, exists := r.Cache.Get(name.String()); exists {
 		return ref, nil
 	} else {
 		slog.Debug("not found", "name", name)
@@ -67,7 +67,7 @@ func (r *ReferenceStorage) Reference(name plumbing.ReferenceName) (*plumbing.Ref
 		}
 	}
 
-	evicted := r.Cache.Add(name.Short(), obj)
+	evicted := r.Cache.Add(name.String(), obj)
 	slog.Debug("added to cache", "evicted", evicted)
 
 	return obj, nil

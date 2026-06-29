@@ -19,6 +19,7 @@ import (
 	"net/http"
 
 	"github.com/iainjreid/source/internal/web/handlers"
+	"github.com/iainjreid/source/internal/web/middleware"
 	"github.com/iainjreid/source/public"
 	"github.com/iainjreid/source/storage/driver"
 )
@@ -35,14 +36,17 @@ func NewServer(store driver.Store, port int) error {
 	mux.HandleFunc("GET /{repo}/refs", h.GetRefs)
 	mux.HandleFunc("GET /{repo}/tree/{hash}", h.GetTree)
 	mux.HandleFunc("GET /{repo}/blob/{hash}/{filepath...}", h.GetBlob)
+	mux.HandleFunc("GET /{repo}/raw/{hash}/{filepath...}", h.GetRawBlob)
 
 	// handler := middleware.Logging(
 	// 	middleware.Recovery(mux),
 	// )
 
+	handler := middleware.ResponseTimeReporter(mux)
+
 	srv := &http.Server{
 		Addr:    fmt.Sprintf(":%d", port),
-		Handler: mux,
+		Handler: handler,
 	}
 
 	return srv.ListenAndServe()

@@ -91,6 +91,8 @@ func (s *Store) GetRepo(ctx context.Context, name string) (driver.Repo, error) {
 		description string
 	)
 
+	slog.DebugContext(ctx, "loading repo from durable storage", "name", name)
+
 	err := s.Pool.QueryRow(ctx, `
 		SELECT
 			repos.id,
