@@ -18,7 +18,10 @@ package public
 
 import (
 	"embed"
+	"io/fs"
 )
 
 //go:embed dist/index.html dist/assets/*.js dist/assets/*.css
-var Files embed.FS
+var embedFS embed.FS
+
+var Files, _ = fs.Sub(embedFS, "dist")
