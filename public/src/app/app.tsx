@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { GitBranch, Star, GitFork, Eye, File, Check, Circle, Github, Globe, Clock, Tag, ChevronsUpDown, Copy, AlertTriangle, GitMerge } from "lucide-react";
+import { GitBranch, Star, GitFork, Eye, File, Check, Circle, Github, Globe, Clock, Tag, ChevronsUpDown, Copy, AlertTriangle, GitMerge, CircleDot, Asterisk } from "lucide-react";
 import { Code } from "./components/code";
 import { GetFile } from "./utils/api";
 import { TreeNode } from "./components/tree-node";
@@ -325,7 +325,7 @@ export function App() {
       {/* ── Navbar ── */}
       <header className="shrink-0 flex items-center gap-0 border-b border-border bg-card">
         <div className="flex items-center justify-center w-12 h-10 border-r border-border shrink-0">
-          <GitMerge size={16} className="text-accent" strokeWidth={2} />
+          <Asterisk size={16} className="text-accent" strokeWidth={2} />
         </div>
 
         <div className="flex items-center gap-2 px-4 h-10 border-r border-border">
@@ -511,8 +511,8 @@ export function App() {
         <div className="flex-1" />
 
         <div className="flex items-center gap-3">
-          {[
-            { icon: Github, label: "GitHub", href: "https://github.com/iainjreid" },
+          {[ // TODO: Make these configurable
+            { icon: Github, label: "GitHub", href: "https://github.com/iainjreid/source" },
             { icon: Bluesky, label: "Bluesky", href: "https://bsky.app/profile/iainjreid.com" },
             { icon: Globe, label: "Website", href: "https://iainjreid.com" },
           ].map(({ icon: Icon, label, href }) => (

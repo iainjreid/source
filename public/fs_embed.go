@@ -21,7 +21,7 @@ import (
 	"io/fs"
 )
 
-//go:embed dist/index.html dist/assets/*.js dist/assets/*.css
+//go:embed dist/index.html dist/assets/*.js dist/assets/*.css dist/assets/*.png
 var embedFS embed.FS
 
 var Files, _ = fs.Sub(embedFS, "dist")
