@@ -1,6 +1,7 @@
 # Ignore any build artifacts
+*.stamp
 /src
 
-# Ignore dependencies and build artefacts associated with the frontend
+# Ignore dependencies and build artifacts associated with the frontend
 /node_modules
 /public/dist
