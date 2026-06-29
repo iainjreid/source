@@ -18,9 +18,9 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/iainjreid/source/internal/web/handlers"
 	"github.com/iainjreid/source/public"
 	"github.com/iainjreid/source/storage/driver"
-	"github.com/iainjreid/source/web/handlers"
 )
 
 func NewServer(store driver.Store, port int) error {

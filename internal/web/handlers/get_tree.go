@@ -18,7 +18,7 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/iainjreid/source/git"
+	"github.com/iainjreid/source/internal/git"
 	"github.com/iainjreid/source/internal/utils"
 )
 

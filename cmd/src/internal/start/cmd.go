@@ -23,9 +23,9 @@ import (
 	"github.com/iainjreid/source/cmd/src/internal/cli"
 	_ "github.com/iainjreid/source/internal/drivers"
 	"github.com/iainjreid/source/internal/logger"
-	"github.com/iainjreid/source/ssh"
+	"github.com/iainjreid/source/internal/ssh"
+	"github.com/iainjreid/source/internal/web"
 	"github.com/iainjreid/source/storage"
-	"github.com/iainjreid/source/web"
 	"golang.org/x/sync/errgroup"
 )
 

@@ -22,7 +22,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/iainjreid/source/web/handlers"
+	"github.com/iainjreid/source/internal/web/handlers"
 )
 
 func TestSendJSON(t *testing.T) {

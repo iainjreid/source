@@ -25,7 +25,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/protocol/packp"
 	"github.com/go-git/go-git/v5/plumbing/storer"
 	"github.com/go-git/go-git/v5/plumbing/transport"
-	"github.com/iainjreid/source/git"
+	"github.com/iainjreid/source/internal/git"
 	"github.com/iainjreid/source/storage/driver"
 	"golang.org/x/crypto/ssh"
 )

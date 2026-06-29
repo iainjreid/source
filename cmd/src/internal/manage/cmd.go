@@ -18,8 +18,8 @@ import (
 	"context"
 
 	"github.com/iainjreid/source/cmd/src/internal/cli"
-	"github.com/iainjreid/source/git"
 	_ "github.com/iainjreid/source/internal/drivers"
+	"github.com/iainjreid/source/internal/git"
 	"github.com/iainjreid/source/internal/logger"
 	"github.com/iainjreid/source/storage"
 )
