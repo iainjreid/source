@@ -33,6 +33,7 @@ func NewServer(store driver.Store, port int) error {
 
 	mux.Handle("/", http.FileServer(http.FS(public.Files)))
 
+	mux.HandleFunc("GET /repos", h.GetRepos)
 	mux.HandleFunc("GET /{repo}/refs", h.GetRefs)
 	mux.HandleFunc("GET /{repo}/tree/{hash}", h.GetTree)
 	mux.HandleFunc("GET /{repo}/blob/{hash}/{filepath...}", h.GetBlob)
