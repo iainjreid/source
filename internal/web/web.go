@@ -38,11 +38,11 @@ func NewServer(store driver.Store, port int) error {
 	mux.HandleFunc("GET /{repo}/blob/{hash}/{filepath...}", h.GetBlob)
 	mux.HandleFunc("GET /{repo}/raw/{hash}/{filepath...}", h.GetRawBlob)
 
-	// handler := middleware.Logging(
-	// 	middleware.Recovery(mux),
-	// )
-
-	handler := middleware.ResponseTimeReporter(mux)
+	handler := middleware.Logging(
+		middleware.Recover(
+			middleware.ResponseTimeReporter(mux),
+		),
+	)
 
 	srv := &http.Server{
 		Addr:    fmt.Sprintf(":%d", port),
