@@ -323,9 +323,7 @@ func (o *ObjectStorage) CommitCopy() error {
 
 	// Get a Tx for making transaction requests.
 	conn, err := o.Pool.Acquire(ctx)
-	defer func() {
-		conn.Release()
-	}()
+	defer conn.Release()
 
 	if err != nil {
 		return err
@@ -340,9 +338,16 @@ func (o *ObjectStorage) CommitCopy() error {
 		writes = append(writes, v)
 	}
 
-	chunkSize := len(writes) / n
-	slog.DebugContext(ctx, "running parallel commit", "write_count", len(writes), "max_conn", n, "max_chunk_size", chunkSize)
+	if err != nil {
+		return err
+	}
 
+	chunkSize := len(writes)
+	if chunkSize > 100 {
+		chunkSize = chunkSize / n
+	}
+
+	slog.DebugContext(ctx, "running parallel commit", "write_count", len(writes), "max_conn", n, "max_chunk_size", chunkSize)
 	for i := 0; i < len(writes); i += chunkSize {
 		logger := slog.With(
 			slog.Group("goroutine_info",
@@ -367,16 +372,39 @@ func (o *ObjectStorage) CommitCopy() error {
 			}
 
 			logger.DebugContext(ctx, "copying  chunk")
-			source := &BufferWriter{
-				repoId: o.ID,
-				buf:    chunk,
+
+			batch := &pgx.Batch{}
+			for _, obj := range chunk {
+				slog.Info("size", "size", obj.Size())
+				cont := make([]byte, obj.Size())
+				reader, err := obj.Reader()
+				if err != nil {
+					panic(err)
+				}
+				reader.Read(cont)
+
+				batch.Queue(`
+					INSERT INTO objects (
+						repo_id,
+						type,
+						hash,
+						contents,
+						length
+					) VALUES ($1, $2, $3, $4, $5) ON CONFLICT DO NOTHING;
+				`, o.ID, obj.Type(), obj.Hash(), cont, obj.Size())
 			}
 
-			count, err := chunkConn.CopyFrom(ctx, pgx.Identifier{"objects"}, []string{"repo_id", "type", "hash", "contents", "length"}, source)
-			if err != nil {
-				return fmt.Errorf("chunk failed to be written: %w", err)
+			br := chunkConn.SendBatch(ctx, batch)
+			defer br.Close()
+
+			for range chunk {
+				if _, err := br.Exec(); err != nil {
+					logger.ErrorContext(ctx, "failed to commit chunk")
+					return fmt.Errorf("chunk failed to be written: %w", err)
+				}
 			}
-			logger.DebugContext(ctx, "successfully copied chunk", "written", count)
+
+			logger.DebugContext(ctx, "successfully copied chunk", "written", len(chunk))
 
 			return nil
 		})
