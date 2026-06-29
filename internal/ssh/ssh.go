@@ -46,16 +46,12 @@ func (i *IdentityLoader) Load(ep *transport.Endpoint) (storer.Storer, error) {
 		return nil, err
 	}
 
-	exists, err := i.storer.RepoExists(context.TODO(), name)
+	repo, err := i.storer.GetRepo(context.TODO(), name)
 	if err != nil {
 		return nil, err
 	}
 
-	if !exists {
-		return nil, transport.ErrRepositoryNotFound
-	}
-
-	return i.storer.ToStorer(context.TODO(), name)
+	return i.storer.ToStorer(context.TODO(), repo.ID)
 }
 
 var config = &ssh.ServerConfig{

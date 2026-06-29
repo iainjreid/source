@@ -20,6 +20,7 @@ import (
 	"log/slog"
 
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/transport"
 	gogit "github.com/go-git/go-git/v5/storage"
 	"github.com/go-git/go-git/v5/storage/memory"
 	lru "github.com/hashicorp/golang-lru/v2"
@@ -27,6 +28,7 @@ import (
 	"github.com/iainjreid/source/internal/utils"
 	"github.com/iainjreid/source/storage"
 	"github.com/iainjreid/source/storage/driver"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -101,6 +103,10 @@ func (s *Store) GetRepo(ctx context.Context, name string) (driver.Repo, error) {
 		WHERE repos.name = $1;`, name).Scan(&id, &description)
 
 	if err != nil {
+		if err == pgx.ErrNoRows {
+			err = transport.ErrRepositoryNotFound
+		}
+
 		return driver.Repo{}, err
 	}
 
@@ -166,6 +172,7 @@ func (r *Store) IterateRefs(ctx context.Context, repoId string) (driver.Iterator
 	rows, err := r.Pool.Query(context.Background(), storage.GetRefsQuery, repoId)
 
 	if err != nil {
+		slog.ErrorContext(ctx, "failed to iterate references", "error", err)
 		return nil, &plumbing.UnexpectedError{
 			Err: err,
 		}
@@ -189,16 +196,11 @@ type Storage struct {
 	memory.ConfigStorage
 }
 
-func (s *Store) ToStorer(ctx context.Context, name string) (gogit.Storer, error) {
-	repo, err := s.GetRepo(ctx, name)
-	if err != nil {
-		return nil, err
-	}
-
-	ns := cache.Register(name)
+func (s *Store) ToStorer(ctx context.Context, id string) (gogit.Storer, error) {
+	ns := cache.Register(id)
 
 	return &Storage{
-		ReferenceStorage: ReferenceStorage{ID: repo.ID, Pool: s.Pool, Cache: ns.Refs},
-		ObjectStorage:    ObjectStorage{ID: repo.ID, Pool: s.Pool, Cache: ns.Objs},
+		ReferenceStorage: ReferenceStorage{ID: id, Pool: s.Pool, Cache: ns.Refs},
+		ObjectStorage:    ObjectStorage{ID: id, Pool: s.Pool, Cache: ns.Objs},
 	}, nil
 }

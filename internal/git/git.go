@@ -16,7 +16,6 @@ package git
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -45,23 +44,32 @@ func CloneRepo(ctx context.Context, store driver.Store, url string) (*Repo, erro
 		return nil, err
 	}
 
+	var id string
+
 	if exists {
-		return nil, errors.New("Repo already exists")
+		repo, err := store.GetRepo(ctx, name)
+		if err != nil {
+			return nil, err
+		}
+
+		id = repo.ID
+	} else {
+		uuid, err := uuid.NewV7()
+		if err != nil {
+			panic(err)
+		}
+
+		if err := store.CreateRepo(ctx, driver.Repo{
+			ID:   uuid.String(),
+			Name: name,
+		}); err != nil {
+			return nil, fmt.Errorf("error whilst creating repo: %v", err)
+		}
+
+		id = uuid.String()
 	}
 
-	id, err := uuid.NewV7()
-	if err != nil {
-		panic(err)
-	}
-
-	if err := store.CreateRepo(ctx, driver.Repo{
-		ID:   id.String(),
-		Name: name,
-	}); err != nil {
-		return nil, fmt.Errorf("error whilst creating repo: %v", err)
-	}
-
-	storer, err := store.ToStorer(ctx, name)
+	storer, err := store.ToStorer(ctx, id)
 	if err != nil {
 		return nil, err
 	}

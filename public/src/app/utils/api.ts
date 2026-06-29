@@ -1,3 +1,11 @@
+export interface Repos {
+  repos: Repo[];
+}
+
+export interface Repo {
+  id: string;
+  name: string;
+}
 
 export interface Refs {
   branches: Record<string, string>;
@@ -25,6 +33,10 @@ export interface File {
   lastCommitMsg: string;
   lastCommitAuthor: string;
   timeElapsed: number;
+}
+
+export function GetRepos(): APIRes<Repos> {
+  return request<Repos>('/repos');
 }
 
 export function GetFile(repoId: string, ref: string, path: string): APIRes<File> {

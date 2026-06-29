@@ -1,13 +1,10 @@
 import { useState, useEffect, useRef } from "react";
-import { GitBranch, Star, GitFork, Eye, File, Check, Circle, Github, Globe, Clock, Tag, ChevronsUpDown, Copy, AlertTriangle, GitMerge, CircleDot, Asterisk } from "lucide-react";
+import { GitBranch, File, Check, Circle, Github, Globe, Clock, Tag, ChevronsUpDown, Copy, AlertTriangle, Asterisk } from "lucide-react";
 import { Code } from "./components/code";
-import { GetFile } from "./utils/api";
+import { GetFile, Repo } from "./utils/api";
 import { TreeNode } from "./components/tree-node";
 import { Bluesky } from "./components/bluesky";
-
-// ─── Constants ───────────────────────────────────────────────────────────────
-
-const REPO = "source";
+import { RepoSelector } from "./components/repo-selector";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -146,7 +143,7 @@ function RefSelector({
       </button>
 
       {open && (
-        <div className="absolute top-full left-0 mt-px z-50 w-52 bg-card border border-border shadow-xl shadow-black/60">
+        <div className="absolute top-full left-[-1px] z-50 w-52 bg-card border border-border shadow-xl shadow-black/60">
           <div className="flex border-b border-border">
             {(["branch", "tag"] as RefKind[]).map((t) => (
               <button
@@ -197,9 +194,10 @@ function RefSelector({
 
 // ─── App ─────────────────────────────────────────────────────────────────────
 
-export function App() {
+export function App({ repos }: { repos: Repo[] }) {
   const path = window.location.pathname.slice(1);
 
+  const [repo, setRepo] = useState<Repo>(repos[0]);
   const [refsState, setRefsState] = useState<RefsState>({ status: "loading" });
   const [treeState, setTreeState] = useState<TreeState>({ status: "loading" });
   const [selectedPath, setSelectedPath] = useState<string>(path);
@@ -239,7 +237,7 @@ export function App() {
   // Fetch branches and tags once on mount
   useEffect(() => {
     const controller = new AbortController();
-    fetch(`/019f0abd-ffd8-7518-80ee-138dd420badc/refs`, { signal: controller.signal })
+    fetch(`/${repo.id}/refs`, { signal: controller.signal })
       .then(async (res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status} — ${res.statusText}`);
         const data: ApiRefs = await res.json();
@@ -262,13 +260,13 @@ export function App() {
         setRefsState({ status: "error", message: err instanceof Error ? err.message : String(err) });
       });
     return () => controller.abort();
-  }, []);
+  }, [repo]);
 
   // Fetch file tree whenever ref changes
   useEffect(() => {
     if (!refValue) return;
     const controller = new AbortController();
-    const url = `/${REPO}/tree/${encodeURIComponent(refValue.hash)}`;
+    const url = `/${repo.id}/tree/${encodeURIComponent(refValue.hash)}`;
 
     setTreeState({ status: "loading" });
 
@@ -302,7 +300,7 @@ export function App() {
     window.history.pushState
     setFileState({ status: "loading" });
 
-    const { destructor, promise } = GetFile("source" /*" 019f0abd-ffd8-7518-80ee-138dd420badc"*/, refValue?.hash!, selectedPath)
+    const { destructor, promise } = GetFile(repo.id, refValue?.hash!, selectedPath)
 
     promise
       .then((file) => {
@@ -327,13 +325,7 @@ export function App() {
         <div className="flex items-center justify-center w-12 h-10 border-r border-border shrink-0">
           <Asterisk size={16} className="text-accent" strokeWidth={2} />
         </div>
-
-        <div className="flex items-center gap-2 px-4 h-10 border-r border-border">
-          <span className="text-xs text-muted-foreground">{window.location.host}</span>
-          <span className="text-xs text-border">/</span>
-          <span className="text-xs text-foreground font-medium">{REPO}</span>
-        </div>
-
+        <RepoSelector repos={repos} repo={repo} setRepo={setRepo} />
         <RefSelector refKind={refKind} refValue={refValue!} refsState={refsState} onChange={handleRefChange} />
       </header>
 
@@ -343,7 +335,6 @@ export function App() {
         <aside className="w-56 shrink-0 border-r border-border bg-card flex flex-col min-h-0 overflow-hidden">
           <div className="flex items-center justify-between px-3 py-2 border-b border-border">
             <span className="text-[10px] text-muted-foreground uppercase tracking-widest">Files</span>
-            <span className="text-[10px] text-muted-foreground">{refValue?.name}</span>
           </div>
 
           <div className="flex-1 overflow-y-auto py-1 relative" style={{ scrollbarWidth: "none" }}>

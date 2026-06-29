@@ -62,7 +62,7 @@ func (h *Handlers) GetTree(w http.ResponseWriter, r *http.Request) {
 	}
 	slog.Info("get tree")
 
-	if repo, err := git.OpenRepo(r.Context(), h.Store, repo); err != nil {
+	if repo, err := git.OpenRepoById(r.Context(), h.Store, repo); err != nil {
 		h.SendErr(w, 500, err.Error())
 	} else {
 		treeResponse := TreeResponse{

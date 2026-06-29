@@ -39,18 +39,26 @@ type Branch struct {
 	Name     string `json:"name"`
 }
 
-func OpenRepo(ctx context.Context, store driver.Store, name string) (*Repo, error) {
-	storer, err := store.ToStorer(ctx, name)
+func OpenRepoById(ctx context.Context, store driver.Store, id string) (*Repo, error) {
+	storer, err := store.ToStorer(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 
 	return &Repo{
-		Name: name,
 		Repo: &git.Repository{
 			Storer: storer,
 		},
 	}, nil
+}
+
+func OpenRepo(ctx context.Context, store driver.Store, name string) (*Repo, error) {
+	repo, err := store.GetRepo(ctx, name)
+	if err != nil {
+		return nil, err
+	}
+
+	return OpenRepoById(ctx, store, repo.ID)
 }
 
 // Branches returns all the References that are branches.

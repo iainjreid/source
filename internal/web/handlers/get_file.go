@@ -143,7 +143,7 @@ func (h *Handlers) GetBlob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if repo, err := git.OpenRepo(r.Context(), h.Store, repo); err != nil {
+	if repo, err := git.OpenRepoById(r.Context(), h.Store, repo); err != nil {
 		h.SendErr(w, 500, err.Error())
 	} else {
 		blobResponse := BlobResponse{
@@ -176,7 +176,7 @@ func (h *Handlers) GetRawBlob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if repo, err := git.OpenRepo(r.Context(), h.Store, repo); err != nil {
+	if repo, err := git.OpenRepoById(r.Context(), h.Store, repo); err != nil {
 		h.SendErr(w, 500, err.Error())
 	} else {
 		_hash := plumbing.NewHash(hash)

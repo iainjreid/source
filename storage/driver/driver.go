@@ -50,20 +50,25 @@ type Store interface {
 
 	RepoExists(ctx context.Context, name string) (bool, error)
 
-	GetRepo(context.Context, string) (Repo, error)
+	// ToStorer is a temporary method that returns a [storage.Storer] for the
+	// repository with the provided ID.
+	ToStorer(ctx context.Context, repoId string) (storage.Storer, error)
 
+	RepoStore
 	RefStore
+}
 
-	CreateRepo(context.Context, Repo) error
-
+type RepoStore interface {
 	// ListRepos should return a slice of the available repositories stored with
 	// the database.
 	ListRepos(context.Context) ([]Repo, error)
 
-	ToStorer(ctx context.Context, name string) (storage.Storer, error)
-}
+	// CreateRepo writes the provided repository data to the underlying storage
+	// engine.
+	CreateRepo(ctx context.Context, repo Repo) error
 
-type RepoStore interface {
+	// GetRepo retrieves the repository with the provided ID.
+	GetRepo(ctx context.Context, repoId string) (Repo, error)
 }
 
 type RefStore interface {
@@ -82,9 +87,9 @@ type ObjectStore interface {
 // name of the repository will allow us to defer the existance check to the
 // database itself when the time comes.
 type Repo struct {
-	ID          string
-	Name        string
-	Description string
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"-"`
 }
 
 type Ref = plumbing.Reference
