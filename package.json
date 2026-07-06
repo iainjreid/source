@@ -2,7 +2,7 @@
   "name": "source",
   "type": "module",
   "scripts": {
-    "dev": "vite -c public/vite.config.js build -w",
+    "dev": "vite -c public/vite.config.js build -w --minify=false",
     "build": "vite -c public/vite.config.js build"
   },
   "dependencies": {
