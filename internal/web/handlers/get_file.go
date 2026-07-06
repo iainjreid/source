@@ -41,8 +41,13 @@ type BlobResponse struct {
 }
 
 func (b *BlobResponse) LoadLastCommit(rev string, filepath string) error {
+	hash, err := b.repo.Repo.ResolveRevision(plumbing.Revision(rev))
+	if err != nil {
+		return err
+	}
+
 	iter, err := b.repo.Repo.Log(&gogit.LogOptions{
-		From:     plumbing.NewHash(rev),
+		From:     *hash,
 		FileName: &filepath,
 	})
 	if err != nil {
