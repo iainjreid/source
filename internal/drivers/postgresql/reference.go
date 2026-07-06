@@ -45,14 +45,14 @@ func (r *ReferenceStorage) Reference(name plumbing.ReferenceName) (*plumbing.Ref
 	slog.Debug("getting reference", "name", name)
 
 	rows, err := r.Pool.Query(context.Background(), storage.GetRefQuery, r.ID, name)
-	defer rows.Close()
-
 	if err != nil {
 		slog.Debug("err", "err", err)
 		return nil, &plumbing.UnexpectedError{
 			Err: err,
 		}
 	}
+
+	defer rows.Close()
 
 	if !rows.Next() {
 		slog.Debug("Next", "err", err)

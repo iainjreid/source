@@ -141,11 +141,11 @@ func (s *Store) EnsureReady(ctx context.Context) error {
 
 func (s *Store) ListRepos(ctx context.Context) ([]driver.Repo, error) {
 	rows, err := s.Pool.Query(ctx, "SELECT id, name, description FROM repos;")
-	defer rows.Close()
-
 	if err != nil {
 		return nil, fmt.Errorf("error whilst listing repositories: %w", err)
 	}
+
+	defer rows.Close()
 
 	var repos []driver.Repo
 	var id, name, description string
