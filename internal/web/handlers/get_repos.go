@@ -45,11 +45,7 @@ func (h *Handlers) GetRepos(w http.ResponseWriter, r *http.Request) {
 			refsResponse.AddRepo(repo)
 		}
 
-		if err != nil {
-			h.SendErr(w, 500, err.Error())
-		} else {
-			refsResponse.StopClock()
-			h.SendJSON(w, r, refsResponse)
-		}
+		refsResponse.StopClock()
+		h.SendJSON(w, r, refsResponse)
 	}
 }
