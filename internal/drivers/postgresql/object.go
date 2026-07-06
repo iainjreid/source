@@ -338,10 +338,6 @@ func (o *ObjectStorage) CommitCopy() error {
 		writes = append(writes, v)
 	}
 
-	if err != nil {
-		return err
-	}
-
 	chunkSize := len(writes)
 	if chunkSize > 100 {
 		chunkSize = chunkSize / n
