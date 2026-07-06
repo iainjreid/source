@@ -82,5 +82,6 @@ func (h *Handlers) SendPlain(w http.ResponseWriter, r *http.Request, body io.Rea
 // SendErr sends an HTTP error response with the provided status code and
 // message in the format "<status-code> <message>\n".
 func (h *Handlers) SendErr(w http.ResponseWriter, code int, msg string) {
+	slog.Error("sending error", "error", msg)
 	http.Error(w, fmt.Sprintf("%d %s", code, msg), code)
 }
