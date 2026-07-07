@@ -89,7 +89,7 @@ type ObjectStore interface {
 type Repo struct {
 	ID          string `json:"id"`
 	Name        string `json:"name"`
-	Description string `json:"-"`
+	Description string `json:"description"`
 }
 
 type Ref = plumbing.Reference
