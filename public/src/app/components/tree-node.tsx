@@ -1,5 +1,7 @@
 import { FC } from "react"
 import { ChevronDown, ChevronRight, File, Folder, FolderOpen } from "lucide-react";
+import { Link } from "./link";
+import { useSelectedRef, useSelectedRepo } from "../hooks/use-shared-state";
 
 interface TreeNodeProps {
   node: FileNode;
@@ -10,22 +12,25 @@ interface TreeNodeProps {
 }
 
 export const TreeNode: FC<TreeNodeProps> = (props) => {
+  const selectedRepo = useSelectedRepo();
+  const selectedRef = useSelectedRef();
+
   const indent = props.depth * 14;
 
   if (props.node.kind === "file") {
     const isSelected = props.selectedPath === props.node.path;
     return (
-      <button
-        onClick={() => props.onSelect(props.node.path)}
-        className="w-full flex items-center gap-1.5 py-[3px] pr-3 text-left transition-colors group"
-        style={{ paddingLeft: `${indent + 8}px` }}
+      <Link
+        to={`/${selectedRepo.state?.name}/refs/${selectedRef.state?.shortName}/blob/${props.node.path}`}
       >
-        <File size={12} className={isSelected ? "text-accent" : "text-muted-foreground"} strokeWidth={1.5} />
-        <span className={`text-xs font-mono truncate transition-colors ${isSelected ? "text-accent font-medium" : "text-muted-foreground group-hover:text-foreground"
-          }`}>
-          {props.node.name}
-        </span>
-      </button>
+        <div className="w-full flex items-center gap-1.5 py-[3px] pr-3 text-left transition-colors group" style={{ paddingLeft: `${indent + 8}px` }}>
+          <File size={12} className={isSelected ? "text-accent" : "text-muted-foreground"} strokeWidth={1.5} />
+          <span className={`text-xs font-mono truncate transition-colors ${isSelected ? "text-accent font-medium" : "text-muted-foreground group-hover:text-foreground"
+            }`}>
+            {props.node.name}
+          </span>
+        </div>
+      </Link>
     );
   }
 

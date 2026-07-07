@@ -13,5 +13,9 @@ export default defineConfig({
   esbuild: {
     jsx: 'automatic',
     legalComments: 'none',
+    drop: [
+      'console',
+      'debugger',
+    ],
   },
 });
