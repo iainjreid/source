@@ -20,7 +20,6 @@ import (
 
 	"github.com/iainjreid/source/internal/web/handlers"
 	"github.com/iainjreid/source/internal/web/middleware"
-	"github.com/iainjreid/source/public"
 	"github.com/iainjreid/source/storage/driver"
 )
 
@@ -31,13 +30,13 @@ func NewServer(store driver.Store, port int) error {
 		Store: store,
 	}
 
-	mux.Handle("/", http.FileServer(http.FS(public.Files)))
-
 	mux.HandleFunc("GET /repos", h.GetRepos)
 	mux.HandleFunc("GET /{repo}/refs", h.GetRefs)
 	mux.HandleFunc("GET /{repo}/tree/{hash}", h.GetTree)
 	mux.HandleFunc("GET /{repo}/blob/{hash}/{filepath...}", h.GetBlob)
 	mux.HandleFunc("GET /{repo}/raw/{hash}/{filepath...}", h.GetRawBlob)
+
+	mux.Handle("/", handlers.SpaHandler)
 
 	handler := middleware.Logging(
 		middleware.Recover(
