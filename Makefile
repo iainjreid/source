@@ -2,7 +2,7 @@ PROG=src
 
 GOFLAGS=-buildvcs=true -ldflags="-s -w" -trimpath -tags="standalone"
 
-.PHONY: $(PROG)
+.PHONY: test fmt clean
 
 FRONTEND_DEPS_STAMP := .frontend_deps.stamp
 FRONTEND_BUILD_STAMP := .frontend_build.stamp
