@@ -1,30 +1,39 @@
-PROG=src
+# Installation paths (configurable).
+PREFIX  ?= /usr/local
+DESTDIR ?=
 
-GOFLAGS=-buildvcs=true -ldflags="-s -w" -trimpath -tags="standalone"
+# Go build flags.
+GOFLAGS := -buildvcs=true -ldflags="-s -w" -trimpath -tags=standalone
 
-.PHONY: test fmt clean
-
-FRONTEND_DEPS_STAMP := .frontend_deps.stamp
+# Frontend build markers.
+FRONTEND_DEPS_STAMP  := .frontend_deps.stamp
 FRONTEND_BUILD_STAMP := .frontend_build.stamp
 
-$(PROG): $(FRONTEND_DEPS_STAMP) $(FRONTEND_BUILD_STAMP)
+# Sources that are used to determine when the frontend should be rebuilt.
+FRONTEND_SOURCES := $(shell find public -type f -not -path "public/dist/*")
+
+.PHONY: clean install
+
+# Build the Source binary.
+src: $(FRONTEND_DEPS_STAMP) $(FRONTEND_BUILD_STAMP)
 	go build $(GOFLAGS) -o $@ ./cmd/src
 	du -sh $@
 
+# Install the Source binary.
+install:
+	install -Dm755 src $(DESTDIR)$(PREFIX)/bin/src
+
+# Install the frontend dependencies.
 $(FRONTEND_DEPS_STAMP): package.json package-lock.json
-	npm ci
+	npm ci --ignore-scripts
 	@touch $@
 
-$(FRONTEND_BUILD_STAMP): $(FRONTEND_DEPS_STAMP) $(shell find public -type f -not -path "public/dist/*")
+# Build the frontend assets.
+$(FRONTEND_BUILD_STAMP): $(FRONTEND_DEPS_STAMP) $(FRONTEND_SOURCES)
 	npm run build
 	@touch $@
 
-test:
-	go test ./...
-
-fmt:
-	go fmt ./...
-
+# Remove all artefacts.
 clean:
 	rm -f $(FRONTEND_DEPS_STAMP)
 	rm -rf ./node_modules
