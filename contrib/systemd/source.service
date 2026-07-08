@@ -1,0 +1,13 @@
+[Unit]
+Description=Source Git Server
+After=network.target
+
+[Service]
+User=source
+Group=source
+EnvironmentFile=/etc/source/source.env
+ExecStart=/usr/local/bin/src
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
