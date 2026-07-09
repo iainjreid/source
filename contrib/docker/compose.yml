@@ -1,0 +1,56 @@
+version: "3.9"
+name: source
+
+services:
+  source:
+    build: ../..
+    container_name: source
+    restart: unless-stopped
+
+    environment:
+      SOURCE_DB: postgresql://postgres@postgres:5432
+
+    ports:
+      - "8080:8080"
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:18
+    container_name: source-postgres
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_HOST_AUTH_METHOD: trust
+
+    ports:
+      - "5432:5432"
+
+    volumes:
+      - postgres-data:/var/lib/postgresql
+
+    shm_size: 1g
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 2s
+      timeout: 5s
+      retries: 5
+
+    command: >
+      postgres
+      -c shared_buffers=1GB
+      -c effective_cache_size=4GB
+      -c maintenance_work_mem=256MB
+      -c wal_compression=zstd
+      -c max_wal_size=4GB
+      -c min_wal_size=1GB
+      -c random_page_cost=1.1
+      -c shared_preload_libraries=pg_stat_statements
+      -c pg_stat_statements.max=10000
+      -c pg_stat_statements.track=all
+
+volumes:
+  postgres-data:
