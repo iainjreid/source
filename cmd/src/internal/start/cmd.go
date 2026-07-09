@@ -16,11 +16,12 @@ package start
 
 import (
 	"context"
+	"log"
 	"log/slog"
-	"os"
 	"time"
 
 	"github.com/iainjreid/source/cmd/src/internal/cli"
+	"github.com/iainjreid/source/internal/config"
 	_ "github.com/iainjreid/source/internal/drivers"
 	"github.com/iainjreid/source/internal/logger"
 	"github.com/iainjreid/source/internal/ssh"
@@ -57,28 +58,33 @@ Example:
 func Cmd(ctx context.Context, args []string) {
 	cmd := cli.New("src start")
 
-	if len(args) == 0 {
-		cmd.Usage()
-	}
+	cmd.Flag(config.OptDatabaseURI, "db", "")
+	cmd.Flag(config.OptHttpPort, "http-port", "")
+	cmd.Flag(config.OptSshPort, "ssh-port", "")
+	cmd.Flag(config.OptSshIdPath, "ssh-id-path", "i")
+	cmd.Flag(config.OptSshId, "ssh-id", "I")
 
 	var (
-		db        = cmd.String("", "db", "")
-		quiet     = cmd.Bool(false, "quiet", "q")
-		verbose   = cmd.Bool(false, "verbose", "v")
-		json      = cmd.Bool(false, "json", "j")
-		help      = cmd.Bool(false, "help", "h")
-		sshIdPath = cmd.String("", "ssh-id-path", "i")
-		sshId     = cmd.String("", "ssh-id", "I")
-		sshPort   = cmd.Int(2222, "ssh-port", "")
-		httpPort  = cmd.Int(8080, "http-port", "")
-		debug     = cmd.Bool(false, "debug", "")
+		quiet   = cmd.Bool(false, "quiet", "q")
+		verbose = cmd.Bool(false, "verbose", "v")
+		json    = cmd.Bool(false, "json", "j")
+		help    = cmd.Bool(false, "help", "h")
+		debug   = cmd.Bool(false, "debug", "")
 	)
-
-	cmd.Parse(args)
 
 	if *help {
 		cli.Fatal(1, usage)
 	}
+
+	if err := cmd.ResolveConfig(args); err != nil {
+		cmd.ExplainUsage(err.Error())
+	}
+
+	if err := config.Validate(); err != nil {
+		cmd.ExplainUsage(err.Error())
+	}
+
+	log.Println(*config.SshPort)
 
 	if level, err := cli.ResolveLoggerFlags(quiet, verbose); err != nil {
 		cmd.ExplainUsage(err.Error())
@@ -86,47 +92,27 @@ func Cmd(ctx context.Context, args []string) {
 		logger.Init(level, *json, *debug, nil)
 	}
 
-	if *db == "" {
-		cmd.ExplainUsage("--db is required")
-	}
-
-	if *sshIdPath != "" && *sshId != "" {
-		cmd.ExplainUsage("-i/--ssh-id-path can't be used with -I/--ssh-id")
-	}
-
-	if *sshIdPath != "" {
-		data, err := os.ReadFile(*sshIdPath)
-		if err != nil {
-			cli.Fatal(cli.Failure, "Unable to read SSH private key")
-		}
-		*sshId = string(data)
-	}
-
-	if *sshId != "" {
-		if err := ssh.Init(*sshId); err != nil {
-			cli.Fatal(cli.Failure, "Unable to parse PEM encoded SSH private key")
-		}
-	}
-
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
-	store, err := storage.Open(ctx, *db)
+	store, err := storage.Open(ctx, config.DatabaseURI.Value())
 	if err != nil {
 		cli.Fatalf(cli.Failure, "Error whilst connecting to DB: %s", err)
 	}
 
 	wg := new(errgroup.Group)
 
-	wg.Go(func() error {
-		slog.Info("Starting Web server")
-		return web.NewServer(store, *httpPort)
-	})
+	if string((*config.HttpPort)) != "" {
+		wg.Go(func() error {
+			slog.Info("Starting Web server")
+			return web.NewServer(store, int(*config.HttpPort))
+		})
+	}
 
-	if *sshId != "" {
+	if string((*config.SshId)) != "" {
 		wg.Go(func() error {
 			slog.Info("Starting SSH server")
-			return ssh.NewServer(store, *sshPort)
+			return ssh.NewServer(store, int(*config.SshPort))
 		})
 	}
 

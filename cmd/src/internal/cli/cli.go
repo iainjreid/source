@@ -20,6 +20,8 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+
+	"github.com/iainjreid/source/internal/config"
 )
 
 var (
@@ -99,6 +101,51 @@ func (c *Cmd) StringSlice(long, short string) *StringSlice {
 		c.Var(out, short, "")
 	}
 	return out
+}
+
+func (c *Cmd) Flag(opt *config.Option, long, short string) {
+	c.Var(opt, long, "")
+	if short != "" {
+		c.Var(opt, short, "")
+	}
+}
+
+func (c *Cmd) VisitUnvisited(fn func(*flag.Flag) error) error {
+	visited := make(map[string]struct{})
+
+	c.Visit(func(f *flag.Flag) {
+		visited[f.Name] = struct{}{}
+	})
+
+	var err error
+
+	c.VisitAll(func(f *flag.Flag) {
+		if err != nil {
+			return
+		}
+
+		if _, ok := visited[f.Name]; ok {
+			return
+		}
+
+		err = fn(f)
+	})
+
+	return err
+}
+
+func (c *Cmd) ResolveConfig(args []string) error {
+	if err := c.Parse(args); err != nil {
+		return err
+	}
+
+	return c.VisitUnvisited(func(f *flag.Flag) error {
+		if v, ok := f.Value.(*config.Option); ok {
+			return v.LoadFromEnv()
+		}
+
+		return nil
+	})
 }
 
 var (
