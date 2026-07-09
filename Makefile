@@ -12,7 +12,7 @@ FRONTEND_BUILD_STAMP := .frontend_build.stamp
 # Sources that are used to determine when the frontend should be rebuilt.
 FRONTEND_SOURCES := $(shell find public -type f -not -path "public/dist/*")
 
-.PHONY: clean install
+.PHONY: src clean install
 
 # Build the Source binary.
 src: $(FRONTEND_DEPS_STAMP) $(FRONTEND_BUILD_STAMP)
