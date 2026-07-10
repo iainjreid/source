@@ -16,7 +16,6 @@ package start
 
 import (
 	"context"
-	"log"
 	"log/slog"
 	"time"
 
@@ -83,8 +82,6 @@ func Cmd(ctx context.Context, args []string) {
 	if err := config.Validate(); err != nil {
 		cmd.ExplainUsage(err.Error())
 	}
-
-	log.Println(*config.SshPort)
 
 	if level, err := cli.ResolveLoggerFlags(quiet, verbose); err != nil {
 		cmd.ExplainUsage(err.Error())
