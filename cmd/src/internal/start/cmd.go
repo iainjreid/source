@@ -99,12 +99,10 @@ func Cmd(ctx context.Context, args []string) {
 
 	wg := new(errgroup.Group)
 
-	if string((*config.HttpPort)) != "" {
-		wg.Go(func() error {
-			slog.Info("Starting Web server")
-			return web.NewServer(store, int(*config.HttpPort))
-		})
-	}
+	wg.Go(func() error {
+		slog.Info("Starting Web server")
+		return web.NewServer(store, int(*config.HttpPort))
+	})
 
 	if string((*config.SshId)) != "" {
 		wg.Go(func() error {
