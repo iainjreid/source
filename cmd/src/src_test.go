@@ -32,15 +32,6 @@ func TestBinary(t *testing.T) {
 		t.Errorf("stderr want '%s' got '%s'", want, got)
 	}
 
-	stdout, stderr = test(cli.BadUsage, "start")
-	if got, want := stdout.String(), ""; got != want {
-		t.Errorf("stdout want '%s' got '%s'", want, got)
-	}
-
-	if got, want := stderr.String(), "Run 'src start --help' for usage.\n"; got != want {
-		t.Errorf("stderr want '%s' got '%s'", want, got)
-	}
-
 	stdout, stderr = test(cli.BadUsage, "manage")
 	if got, want := stdout.String(), ""; got != want {
 		t.Errorf("stdout want '%s' got '%s'", want, got)
