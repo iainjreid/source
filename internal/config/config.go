@@ -63,7 +63,7 @@ func Validate() error {
 			return errors.New("unable to read SSH private key")
 		}
 
-		SshIdPath.Set(string(data))
+		SshId.Set(string(data))
 	}
 
 	if string(*SshId) != "" {
