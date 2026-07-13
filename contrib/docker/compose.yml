@@ -3,7 +3,7 @@ name: source
 
 services:
   source:
-    build: ../..
+    build: .
     container_name: source
     restart: unless-stopped
 

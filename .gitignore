@@ -5,3 +5,8 @@
 # Ignore dependencies and build artifacts associated with the frontend
 /node_modules
 /public/dist
+
+# A local copy of the example configuration for Docker Compose may have been
+# copied into the root of the project if the user has followed the deployment
+# instructions for Docker Compose. Ignore it.
+/compose.yml
