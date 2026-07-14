@@ -120,7 +120,7 @@ Source includes a built-in SSH server. It does not require OpenSSH to be
 installed, but it does require a valid private key to operate.
 
 To generate a private key for the server, run the following and be sure to
-leave the passphrase empty[^2].
+leave the passphrase empty.
 
 ```sh
 ssh-keygen -m PEM -t rsa -b 4096 -f ./key # ... or any other path
@@ -196,7 +196,3 @@ details.
     authentication and should only be used on personal or well secured
     machines. Official information about trust authentication can be
     [found here](https://www.postgresql.org/docs/18/auth-trust.html).
-
-[^2]: Supporting password protected private keys would require the user to
-    provide plain text passwords in order for the program to decrypt them,
-    rendering any illusion of increased security redundant.
