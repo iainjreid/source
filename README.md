@@ -51,21 +51,41 @@ docker run -e POSTGRES_HOST_AUTH_METHOD=trust -p 5433:5432 -d postgres
 
 ### Building Source
 
-At present, Source must be built from source and requires Go 1.25 or
-later.
+Building Source requires Go 1.25+, Node.js 24.16+, Git, and Make (optional but
+recommended).
 
-Cloning the repository, downloading the project dependencies, and then
-building Source can be achieved by running the following.
+#### With Make
+
+When using Make, all build steps are handled automatically, including installing
+the frontend dependencies, building the frontend assets, and compiling the
+standalone Source binary.
 
 ```sh
 # Clone the repository
 git clone https://github.com/iainjreid/source.git && cd source
 
-# Install the project dependencies
-go mod download
+# Build Source
+make
+```
 
-# Build the server binary
-make src
+#### Without Make
+
+If Make is not available on your system, the following build steps can be run
+manually. Certain build options are omitted for brevity but the resulting binary
+will still operate in the same way.
+
+```sh
+# Clone the repository
+git clone https://github.com/iainjreid/source.git && cd source
+
+# Install the frontend dependencies
+npm ci --ignore-scripts
+
+# Build the frontend assets
+npm run build
+
+# Compile the binary
+go build -buildvcs=true	-tags=standalone ./cmd/src
 ```
 
 ### Initialising the Database
