@@ -48,6 +48,9 @@ var (
 
 	//go:embed queries/insert_ref.sql
 	InsertRef string
+
+	//go:embed queries/update_ref.sql
+	UpdateRef string
 )
 
 // Three tables provide all of the core functionality currently offered by the
