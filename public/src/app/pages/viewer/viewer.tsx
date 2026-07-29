@@ -99,7 +99,7 @@ export function Viewer() {
         )}
 
         {selectedFileLoading.state.status === LoadingStatus.Loaded && (
-          <Code lines={selectedFile.state!.fileLines} filePath={selectedFile.state!.fileName} />
+          <Code lines={selectedFile.state!.fileLines || []} filePath={selectedFile.state!.fileName} />
         )}
       </div>
     </main>

@@ -4,7 +4,7 @@ import { Ref, Refs, Repo } from "../utils/api";
 export type FileResponse = {
   fileName: string;
   fileBytes: number;
-  fileLines: string[];
+  fileLines: string[] | null;
   lineCount: number;
   lastCommitHash: string;
   lastCommitMsg: string;
