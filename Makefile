@@ -19,6 +19,10 @@ src: $(FRONTEND_DEPS_STAMP) $(FRONTEND_BUILD_STAMP)
 	go build $(GOFLAGS) -o $@ ./cmd/src
 	@echo "built: $$(du -sh $@)"
 
+src-tiny: $(FRONTEND_DEPS_STAMP) $(FRONTEND_BUILD_STAMP)
+	tinygo build -o $@ -opt=z ./cmd/src
+	@echo "built: $$(du -sh $@)"
+
 # Install the Source binary.
 install:
 	install -Dm755 src $(DESTDIR)$(PREFIX)/bin/src
